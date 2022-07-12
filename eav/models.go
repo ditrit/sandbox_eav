@@ -2,21 +2,30 @@ package eav
 
 import "gorm.io/gorm"
 
-type Object struct {
+type EntityType struct {
 	gorm.Model
-	Identifier string
-	Attributs  []Attribut
+	Name      string
+	Attributs []Attribut
+	Instances []Entity
+}
+
+type Entity struct {
+	gorm.Model
+	Identifier   string
+	Fields       []Value
+	EntityTypeId uint
 }
 
 type Attribut struct {
 	gorm.Model
-	ValueId  int
-	ObjectId int
-	Name     string
-	Value    Value
+	EntityTypeId uint
+	Name         string
+	Values       []Value
 }
 
 type Value struct {
 	gorm.Model
-	Value string
+	Value      string
+	EntityId   uint
+	AttributId uint
 }

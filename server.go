@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-
 	// were using sqlite now since it's easy to use but we will move to cockroachDb as soon as possible
 	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	if err != nil {
@@ -19,4 +18,5 @@ func main() {
 	eav.Init(db)
 	log.Println("Automigrate finished")
 	eav.PopulateDatabase(db)
+	log.Println("Finished populating the database")
 }
