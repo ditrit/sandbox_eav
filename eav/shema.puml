@@ -1,0 +1,45 @@
+@startuml schema_eav
+class EntityType {
+  Label : string
+}
+
+note top of EntityType: Describe a type
+
+
+class Entity {
+  Identifer : uuid.Uuid
+}
+note right : Describe an instance of a type
+
+
+class Attribut {
+  Name : string
+}
+note left : Describe an Attribut
+
+
+class Value {
+  Val : string
+}
+note right : Describe a value
+
+class DateTime {
+  Val : date.DateTime
+}
+note bottom : Describe a DateTime
+
+Value  <|--  DateTime 
+
+
+class Int {
+  Val : int
+}
+note bottom : Describe a DateTime
+
+Value  <|--  Int 
+
+Value "*" -- "1" Attribut
+EntityType "1" -- "*" Entity 
+Value "*" -- "1" Entity 
+EntityType "1" -- "*" Attribut
+@enduml
