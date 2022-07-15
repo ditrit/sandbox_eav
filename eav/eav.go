@@ -3,6 +3,7 @@ package eav
 import (
 	"fmt"
 
+	"github.com/ditrit/sandbox_eav/eav/models"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +16,7 @@ func log(v ...any) {
 func Init(db *gorm.DB) error {
 	// Migrate the schema
 	err := db.AutoMigrate(
-		&EntityType{}, &Entity{}, &Attribut{}, &Value{},
+		&models.EntityType{}, &models.Entity{}, &models.Attribut{}, &models.Value{},
 	)
 	if err != nil {
 		log("migration failed error: ", err.Error())
