@@ -36,7 +36,7 @@ func GetAllEntityType(db *gorm.DB) []*models.EntityType {
 
 func GetEntity(db *gorm.DB, id uint) (*models.Entity, error) {
 	var et models.Entity
-	err := db.Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").First(&et).Error
+	err := db.Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").First(&et, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -91,10 +91,11 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 			}
 		}
 		if !a.CanBeNull && !present {
-			return nil, fmt.Errorf("field %q can't be null and is missing", a.Name)
+			return nil, fmt.Errorf("field %q is missing and can't be null", a.Name)
 		}
 		value.Attribut = a
 		et.Fields = append(et.Fields, &value)
 	}
+	et.EntityType = ett
 	return &et, db.Create(&et).Error
 }

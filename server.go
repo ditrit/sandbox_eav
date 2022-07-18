@@ -29,6 +29,7 @@ func main() {
 	router.HandleFunc("/v1/object/{type}/{id}", endpoints.GetObject(db)).Methods("GET")
 	router.HandleFunc("/v1/object/{type}/{id}", endpoints.DeleteObject(db)).Methods("DELETE")
 	router.HandleFunc("/v1/object/{type}", endpoints.CreateObject(db)).Methods("POST")
+	router.HandleFunc("/v1/object/{type}/{id}", endpoints.ModifyObject(db)).Methods("PUT")
 	// It may be a good idea to choose the CORS options at the bare minimum level
 	cors := handlers.CORS(
 		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "PUT", "OPTIONS"}),

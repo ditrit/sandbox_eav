@@ -4,23 +4,54 @@
 
 @URI = http://{{hostname}}:{{port}}/v1
 
-
+# GET a bird
 GET {{URI}}/object/bird/1 HTTP/1.1
 content-type: application/json
 
 ###
+
+# DELETE a bird
 DELETE {{URI}}/object/bird/1 HTTP/1.1
 content-type: application/json
 
 ###
 
+# CREATE a bird
 POST {{URI}}/object/bird HTTP/1.1
 content-type: application/json
 
 {
 "attrs": {
     "color": "blue",
-    "specie": "mésange",
-    "height": 8
+    "specie": "aigle",
+    "height": 105
 }
+}
+
+###
+
+# CREATE => missing a field
+POST {{URI}}/object/bird HTTP/1.1
+content-type: application/json
+
+{
+"attrs": {
+    "color": "orange",
+    "specie": "should not go in database"
+}
+}
+
+###
+
+# UPDATE a bird
+PUT {{URI}}/object/bird/1 HTTP/1.1
+content-type: application/json
+
+{
+    "id": 1,
+    "attrs": {
+        "color": "red",
+        "specie": "rouge gorge",
+        "height": 8
+    }
 }

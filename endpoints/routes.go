@@ -76,12 +76,17 @@ func DeleteObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.NotFound(w, r)
+				ErrMsg(err.Error(), w)
+
 				return
 			}
 		}
 		if obj.EntityTypeId != ett.ID {
 			http.NotFound(w, r)
 			ErrMsg("This object doesn't belong to this type", w)
+		}
+		for _, v := range obj.Fields {
+			db.Delete(v)
 		}
 		db.Delete(obj)
 	}
@@ -119,5 +124,61 @@ func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 }
 
 type createReq struct {
+	Attrs map[string]interface{}
+}
+
+func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		entityType := vars["type"]
+		ett, err := eav.GetEntityTypeByName(db, entityType)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				ErrMsg("can't find type", w)
+				http.NotFound(w, r)
+				return
+			}
+		}
+		content, err := io.ReadAll(r.Body)
+		if err != nil {
+			ErrMsg("can't open request body", w)
+			http.NotFound(w, r)
+		}
+
+		id, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			ErrMsg("The id you provided is not an int", w)
+			return
+		}
+		obj, err := eav.GetEntity(db, uint(id))
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				http.NotFound(w, r)
+				return
+			}
+		}
+		if obj.EntityTypeId != ett.ID {
+			http.NotFound(w, r)
+			ErrMsg("This object doesn't belong to this type", w)
+		}
+
+		var mr modifyReq
+		json.Unmarshal(content, &mr)
+		fmt.Println(mr)
+		et, err := eav.CreateEntity(db, ett, mr.Attrs)
+		if err != nil {
+			http.NotFound(w, r)
+			ErrMsg(err.Error(), w)
+			return
+		}
+
+		db.Save(et)
+		w.Write(et.EncodeToJson())
+
+	}
+}
+
+type modifyReq struct {
+	id    int
 	Attrs map[string]interface{}
 }
