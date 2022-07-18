@@ -7,3 +7,20 @@
 
 GET {{URI}}/object/bird/1 HTTP/1.1
 content-type: application/json
+
+###
+DELETE {{URI}}/object/bird/1 HTTP/1.1
+content-type: application/json
+
+###
+
+POST {{URI}}/object/bird HTTP/1.1
+content-type: application/json
+
+{
+"attrs": {
+    "color": "blue",
+    "specie": "mésange",
+    "height": 8
+}
+}
