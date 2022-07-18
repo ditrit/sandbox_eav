@@ -5,9 +5,5 @@
 @URI = http://{{hostname}}:{{port}}/v1
 
 
-POST {{URI}}/objects/bird HTTP/1.1
+GET {{URI}}/object/bird/1 HTTP/1.1
 content-type: application/json
-
-{
-    "id": 1
-}

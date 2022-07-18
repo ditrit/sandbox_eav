@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ditrit/sandbox_eav/eav"
+	"github.com/ditrit/sandbox_eav/endpoints"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"gorm.io/driver/sqlite"
@@ -24,8 +25,8 @@ func main() {
 	eav.PopulateDatabase(db)
 
 	router := mux.NewRouter()
-	router.Use(MiddlewareLogger)
-	router.HandleFunc("/v1/object/{type}", endpoints.GetObject).Methods("GET")
+	router.Use(endpoints.MiddlewareLogger)
+	router.HandleFunc("/v1/object/{type}/{id}", endpoints.GetObject(db)).Methods("GET")
 	router.HandleFunc("/v1/object/{type}", endpoints.CreateObject).Methods("POST")
 	// It may be a good idea to choose the CORS options at the bare minimum level
 	cors := handlers.CORS(

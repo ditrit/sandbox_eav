@@ -19,3 +19,33 @@ Pour le noeud "de départ":
 
 - 3.1 Vérifier que l'Entity existe en mémoire
 - 3.2 Construire un json (on pourrait [contruire dynamiquement une struct](https://github.com/Ompluscator/dynamic-struct) et le renvoyer)
+
+
+Les objets sont formaté pour l'instants de la manière suivante:
+```json
+{
+  "id": 12,
+  "attrs": {
+    "attrs1": "qsdqsdqs",
+    "attrs2": true,
+    "attrs3": 1.25,
+    "attrs4": 1254154,
+  } 
+}
+```
+
+Éventuellement nous allons évoluer vers quelques chose de cet ordre là :
+```json
+{
+  "id": 12,
+  "relations":{
+    "owner": 25 # id of the owner
+  },
+  "attrs": {
+    "attrs1": "qsdqsdqs",
+    "attrs2": true,
+    "attrs3": 1.25,
+    "attrs4": 1254154,
+  } 
+}
+```

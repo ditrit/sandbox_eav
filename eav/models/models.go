@@ -120,14 +120,19 @@ func (v *Value) GetBoolVal() bool {
 	return v.BoolVal
 }
 
-func (e *Entity) EncodeToJson() ([]byte, error) {
-	var b strings.Builder
-	// starting the json string
-	b.WriteString("{")
+func (e *Entity) EncodeToJson() []byte {
 	var pairs []string
 	pairs = append(pairs,
 		fmt.Sprintf("%q: %d", "id", e.ID),
 	)
+	pairs = append(pairs,
+		fmt.Sprintf("%q: %s", "attrs", e.encodeAttributes()),
+	)
+	return []byte(buildJson(pairs))
+}
+
+func (e *Entity) encodeAttributes() string {
+	var pairs []string
 	var row string
 	for _, f := range e.Fields {
 		if f.IsNull {
@@ -148,8 +153,15 @@ func (e *Entity) EncodeToJson() ([]byte, error) {
 		}
 		pairs = append(pairs, row)
 	}
+	return buildJson(pairs)
+}
+
+func buildJson(pairs []string) string {
+	var b strings.Builder
+	// starting the json string
+	b.WriteString("{")
 	b.WriteString(strings.Join(pairs, ","))
 	//ending the json string
 	b.WriteString("}")
-	return []byte(b.String()), nil
+	return b.String()
 }
