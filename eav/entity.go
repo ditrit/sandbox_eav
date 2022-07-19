@@ -41,9 +41,10 @@ func GetEntity(db *gorm.DB, id uint) (*models.Entity, error) {
 	return &et, nil
 }
 
-func GetAllEntity(db *gorm.DB) []*models.Entity {
+// Return all Entities for the ett EntityType
+func GetEntities(db *gorm.DB, ett *models.EntityType) []*models.Entity {
 	var ets []*models.Entity
-	db.Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").Find(&ets)
+	db.Where("entity_type_id = ?", ett.ID).Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").Find(&ets)
 	return ets
 }
 

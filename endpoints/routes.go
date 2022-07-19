@@ -35,9 +35,8 @@ func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		var collection []*models.Entity
-		db.Where("entity_type_id = ? ", ett.ID).Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").Find(&collection)
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		var collection []*models.Entity = eav.GetEntities(db, ett)
+
 		var b strings.Builder
 		b.WriteString("[")
 		var pairs []string
@@ -46,6 +45,7 @@ func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		}
 		b.WriteString(strings.Join(pairs, ","))
 		b.WriteString("]")
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.Write([]byte(b.String()))
 	}
 }
