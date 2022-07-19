@@ -1,0 +1,21 @@
+@startuml
+
+class Boat{
+    height: Int
+    IsPassengerBoat: bool [is nullable]
+}
+
+
+
+class Harbour{
+
+}
+
+class Slot{
+    empty: Bool
+}
+
+Harbour --> "*\nslots" Slot
+Slot --> Boat
+Boat --> Harbour
+@enduml

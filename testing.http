@@ -30,15 +30,41 @@ content-type: application/json
 
 ###
 
-# CREATE => missing a field
+# CREATE => with null field
 POST {{URI}}/object/bird HTTP/1.1
 content-type: application/json
 
 {
 "attrs": {
     "color": "orange",
-    "specie": "should not go in database"
+    "specie": "bird with null field (field absent of the request)"
 }
+}
+
+###
+
+# CREATE => with null field
+POST {{URI}}/object/bird HTTP/1.1
+content-type: application/json
+
+{
+"attrs": {
+    "color": "orange",
+    "specie": "bird with null field",
+    "height": null
+}
+}
+
+###
+
+# CREATE => missing an non nullable field
+POST {{URI}}/object/bird HTTP/1.1
+content-type: application/json
+
+{
+    "attrs": {
+        "specie": "Should not endup in database"
+    }
 }
 
 ###
@@ -48,10 +74,10 @@ PUT {{URI}}/object/bird/1 HTTP/1.1
 content-type: application/json
 
 {
-    "id": 1,
     "attrs": {
         "color": "red",
         "specie": "rouge gorge",
-        "height": 8
+        "height": null,
+        "weight": 8.55
     }
 }

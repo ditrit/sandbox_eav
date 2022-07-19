@@ -171,6 +171,11 @@ func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			ErrMsg(err.Error(), w)
 			return
 		}
+		et.ID = obj.ID
+		for _, f := range obj.Fields {
+			db.Delete(f)
+		}
+		db.Delete(obj)
 
 		db.Save(et)
 		w.Write(et.EncodeToJson())

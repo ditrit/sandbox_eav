@@ -15,6 +15,8 @@ func log(v ...any) {
 
 func Init(db *gorm.DB) error {
 	// Migrate the schema
+
+	db.Migrator().DropTable(&models.EntityType{}, &models.Entity{}, &models.Attribut{}, &models.Value{})
 	err := db.AutoMigrate(
 		&models.EntityType{}, &models.Entity{}, &models.Attribut{}, &models.Value{},
 	)

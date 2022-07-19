@@ -15,7 +15,8 @@ import (
 
 func main() {
 	// were using sqlite now since it's easy to use but we will move to cockroachDb as soon as possible
-	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	sqlit := sqlite.Open("test.db")
+	db, err := gorm.Open(sqlit, &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}

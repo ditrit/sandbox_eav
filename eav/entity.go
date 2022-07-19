@@ -1,9 +1,7 @@
 package eav
 
 import (
-	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/ditrit/sandbox_eav/eav/models"
 	"github.com/ditrit/sandbox_eav/utils"
@@ -57,16 +55,16 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 		for k, v := range attrs {
 			if k == a.Name {
 				present = true
-				switch v.(type) {
+				switch t := v.(type) {
 				case string:
 					if a.ValueType != "string" {
-						panic(fmt.Errorf("types dont match (expected=%v got=%v)", a.ValueType, reflect.ValueOf(v).Type().String()))
+						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
 					}
 					value = models.Value{StringVal: v.(string)}
 
 				case float64:
 					if a.ValueType != "int" && a.ValueType != "float" {
-						panic(fmt.Errorf("types dont match (expected=%v got=%v)", a.ValueType, reflect.ValueOf(v).Type().String()))
+						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
 					}
 					if utils.IsAnInt(v.(float64)) {
 						// is an int
@@ -78,24 +76,35 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 
 				case bool:
 					if a.ValueType != "bool" {
-						panic(fmt.Errorf("types dont match (expected=%v got=%v)", a.ValueType, reflect.ValueOf(v).Type().String()))
+						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
 					}
 					value = models.Value{BoolVal: v.(bool)}
 
 				case nil:
-					return nil, errors.New("null type not supported")
+					if !a.IsNullable {
+						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
+					}
+					value = models.Value{IsNull: true}
 
 				default:
 					panic("mmmh you just discovered a new json type (https://go.dev/blog/json#generic-json-with-interface)")
 				}
 			}
 		}
-		if !a.CanBeNull && !present {
+		if !a.IsNullable && !present {
 			return nil, fmt.Errorf("field %q is missing and can't be null", a.Name)
+		}
+		if !present {
+			value = models.Value{IsNull: true}
 		}
 		value.Attribut = a
 		et.Fields = append(et.Fields, &value)
 	}
 	et.EntityType = ett
 	return &et, db.Create(&et).Error
+}
+
+func ModifyEntity(db *gorm.DB, ett *models.EntityType, et *models.Entity, attrs map[string]interface{}) error {
+
+	return nil
 }
