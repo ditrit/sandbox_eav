@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,6 +15,8 @@ import (
 )
 
 func main() {
+	var port = flag.Int("p", 9999, "http port")
+	flag.Parse()
 	// were using sqlite now since it's easy to use but we will move to cockroachDb as soon as possible
 	sqlit := sqlite.Open("test.db")
 	db, err := gorm.Open(sqlit, &gorm.Config{})
@@ -21,8 +24,10 @@ func main() {
 		panic("failed to connect database")
 	}
 	log.Println("Connected to database")
-	eav.Init(db)
+	eav.Init(db) // drop and automigrate DB
 	log.Println("Automigrate finished")
+
+	// This function create the test schema
 	eav.PopulateDatabase(db)
 
 	router := mux.NewRouter()
@@ -45,10 +50,12 @@ func main() {
 		handlers.AllowCredentials(),
 		handlers.MaxAge(0),
 	)(router)
-	fmt.Println("Ready !")
-	http.ListenAndServe(":9999", cors)
+	fmt.Printf("Ready to handle requests at :%d !\n", *port)
+	http.ListenAndServe(fmt.Sprintf(":%d", *port), cors)
 }
 
+// 405 method not allowed handler
+// https://www.restapitutorial.com/lessons/httpmethods.html
 func MethodNotAllowed(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }

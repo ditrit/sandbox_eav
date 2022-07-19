@@ -22,7 +22,8 @@ content-type: application/json
 
 ###
 
-# DELETE all bird / SHOULD FAIl
+# => SHOULD FAIl
+# DELETE all bird 
 DELETE {{URI}}/objects/bird/1 HTTP/1.1
 content-type: application/json
 
@@ -55,7 +56,7 @@ content-type: application/json
 
 ###
 
-# CREATE => with null field
+# CREATE => with field of null value
 POST {{URI}}/objects/bird HTTP/1.1
 content-type: application/json
 
@@ -69,6 +70,7 @@ content-type: application/json
 
 ###
 
+# SHOULD FAIl
 # CREATE => missing an non nullable field
 POST {{URI}}/objects/bird HTTP/1.1
 content-type: application/json
@@ -81,6 +83,7 @@ content-type: application/json
 
 ###
 
+# SHOULD FAIl
 # CREATE => sending a null value non a non nullable field
 POST {{URI}}/objects/bird HTTP/1.1
 content-type: application/json
