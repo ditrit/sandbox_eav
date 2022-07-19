@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/ditrit/sandbox_eav/eav"
+	"github.com/ditrit/sandbox_eav/eav/models"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
@@ -20,6 +22,32 @@ func ErrMsg(msg string, w http.ResponseWriter) {
 			msg,
 		)),
 	)
+}
+
+func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		entityType := vars["type"]
+		ett, err := eav.GetEntityTypeByName(db, entityType)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				http.NotFound(w, r)
+				return
+			}
+		}
+		var collection []*models.Entity
+		db.Where("entity_type_id = ? ", ett.ID).Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").Find(&collection)
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		var b strings.Builder
+		b.WriteString("[")
+		var pairs []string
+		for _, v := range collection {
+			pairs = append(pairs, string(v.EncodeToJson()))
+		}
+		b.WriteString(strings.Join(pairs, ","))
+		b.WriteString("]")
+		w.Write([]byte(b.String()))
+	}
 }
 
 func GetObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {

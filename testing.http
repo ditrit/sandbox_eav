@@ -4,20 +4,26 @@
 
 @URI = http://{{hostname}}:{{port}}/v1
 
+# GET all birds
+GET {{URI}}/objects/bird HTTP/1.1
+content-type: application/json
+
+###
+
 # GET a bird
-GET {{URI}}/object/bird/1 HTTP/1.1
+GET {{URI}}/objects/bird/1 HTTP/1.1
 content-type: application/json
 
 ###
 
 # DELETE a bird
-DELETE {{URI}}/object/bird/1 HTTP/1.1
+DELETE {{URI}}/objects/bird/1 HTTP/1.1
 content-type: application/json
 
 ###
 
 # CREATE a bird
-POST {{URI}}/object/bird HTTP/1.1
+POST {{URI}}/objects/bird HTTP/1.1
 content-type: application/json
 
 {
@@ -31,7 +37,7 @@ content-type: application/json
 ###
 
 # CREATE => with null field
-POST {{URI}}/object/bird HTTP/1.1
+POST {{URI}}/objects/bird HTTP/1.1
 content-type: application/json
 
 {
@@ -44,7 +50,7 @@ content-type: application/json
 ###
 
 # CREATE => with null field
-POST {{URI}}/object/bird HTTP/1.1
+POST {{URI}}/objects/bird HTTP/1.1
 content-type: application/json
 
 {
@@ -70,7 +76,7 @@ content-type: application/json
 ###
 
 # UPDATE a bird
-PUT {{URI}}/object/bird/1 HTTP/1.1
+PUT {{URI}}/objects/bird/1 HTTP/1.1
 content-type: application/json
 
 {

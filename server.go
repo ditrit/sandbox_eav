@@ -27,10 +27,14 @@ func main() {
 
 	router := mux.NewRouter()
 	router.Use(endpoints.MiddlewareLogger)
-	router.HandleFunc("/v1/object/{type}/{id}", endpoints.GetObject(db)).Methods("GET")
-	router.HandleFunc("/v1/object/{type}/{id}", endpoints.DeleteObject(db)).Methods("DELETE")
-	router.HandleFunc("/v1/object/{type}", endpoints.CreateObject(db)).Methods("POST")
-	router.HandleFunc("/v1/object/{type}/{id}", endpoints.ModifyObject(db)).Methods("PUT")
+	// Get whole collection
+	router.HandleFunc("/v1/objects/{type}", endpoints.GetObjects(db)).Methods("GET")
+
+	//CRUD
+	router.HandleFunc("/v1/objects/{type}/{id}", endpoints.GetObject(db)).Methods("GET")
+	router.HandleFunc("/v1/objects/{type}/{id}", endpoints.DeleteObject(db)).Methods("DELETE")
+	router.HandleFunc("/v1/objects/{type}", endpoints.CreateObject(db)).Methods("POST")
+	router.HandleFunc("/v1/objects/{type}/{id}", endpoints.ModifyObject(db)).Methods("PUT")
 	// It may be a good idea to choose the CORS options at the bare minimum level
 	cors := handlers.CORS(
 		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "PUT", "OPTIONS"}),
