@@ -1,6 +1,10 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ditrit/sandbox_eav/utils"
+)
 
 // Describe an instance of an EntityType
 type Entity struct {
@@ -21,7 +25,7 @@ func (e *Entity) EncodeToJson() []byte {
 	pairs = append(pairs,
 		fmt.Sprintf("%q: %s", "attrs", e.encodeAttributes()),
 	)
-	return []byte(buildJson(pairs))
+	return []byte(utils.BuildJsonFromStrings(pairs))
 }
 
 // return the attribut in a json encoded string
@@ -64,5 +68,5 @@ func (e *Entity) encodeAttributes() string {
 		}
 		pairs = append(pairs, row)
 	}
-	return buildJson(pairs)
+	return utils.BuildJsonFromStrings(pairs)
 }
