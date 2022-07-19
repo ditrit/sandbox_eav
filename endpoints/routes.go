@@ -79,7 +79,7 @@ func GetObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			ErrMsg("This object doesn't belong to this type", w)
 		}
-
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.Write(obj.EncodeToJson())
 	}
 }
@@ -117,7 +117,9 @@ func DeleteObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			db.Delete(v)
 		}
 		db.Delete(obj)
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	}
+
 }
 
 func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
@@ -146,6 +148,7 @@ func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			ErrMsg(err.Error(), w)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.Write(et.EncodeToJson())
 
 	}
@@ -206,6 +209,7 @@ func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		db.Delete(obj)
 
 		db.Save(et)
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.Write(et.EncodeToJson())
 
 	}
