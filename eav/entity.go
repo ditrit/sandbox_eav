@@ -58,13 +58,13 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 				switch t := v.(type) {
 				case string:
 					if a.ValueType != "string" {
-						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
+						return nil, fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t)
 					}
 					value = models.Value{StringVal: v.(string)}
 
 				case float64:
 					if a.ValueType != "int" && a.ValueType != "float" {
-						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
+						return nil, fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t)
 					}
 					if utils.IsAnInt(v.(float64)) {
 						// is an int
@@ -76,13 +76,13 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 
 				case bool:
 					if a.ValueType != "bool" {
-						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
+						return nil, fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t)
 					}
 					value = models.Value{BoolVal: v.(bool)}
 
 				case nil:
 					if !a.IsNullable {
-						panic(fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t))
+						return nil, fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t)
 					}
 					value = models.Value{IsNull: true}
 
