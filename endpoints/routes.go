@@ -149,6 +149,8 @@ func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.Header().Add("Location", fmt.Sprintf("/v1/objects/%d", et.ID)) // HACK: we need a more efficient way to get the URL for an entity or an entitytype
+		w.WriteHeader(http.StatusCreated)
 		w.Write(et.EncodeToJson())
 
 	}

@@ -29,6 +29,8 @@ func main() {
 	router.Use(endpoints.MiddlewareLogger)
 	// Get whole collection
 	router.HandleFunc("/v1/objects/{type}", endpoints.GetObjects(db)).Methods("GET")
+	// 405 method not allowed
+	router.HandleFunc("/v1/objects/{type}", MethodNotAllowed).Methods("PUT", "DELETE")
 
 	//CRUD
 	router.HandleFunc("/v1/objects/{type}/{id}", endpoints.GetObject(db)).Methods("GET")
@@ -45,4 +47,8 @@ func main() {
 	)(router)
 	fmt.Println("Ready !")
 	http.ListenAndServe(":9999", cors)
+}
+
+func MethodNotAllowed(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusMethodNotAllowed)
 }

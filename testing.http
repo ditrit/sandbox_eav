@@ -17,6 +17,12 @@ content-type: application/json
 ###
 
 # DELETE a bird
+DELETE {{URI}}/objects/bird HTTP/1.1
+content-type: application/json
+
+###
+
+# DELETE all bird / SHOULD FAIl
 DELETE {{URI}}/objects/bird/1 HTTP/1.1
 content-type: application/json
 
@@ -64,11 +70,24 @@ content-type: application/json
 ###
 
 # CREATE => missing an non nullable field
-POST {{URI}}/object/bird HTTP/1.1
+POST {{URI}}/objects/bird HTTP/1.1
 content-type: application/json
 
 {
     "attrs": {
+        "specie": "Should not endup in database"
+    }
+}
+
+###
+
+# CREATE => sending a null value non a non nullable field
+POST {{URI}}/objects/bird HTTP/1.1
+content-type: application/json
+
+{
+    "attrs": {
+        "color": null,
         "specie": "Should not endup in database"
     }
 }
