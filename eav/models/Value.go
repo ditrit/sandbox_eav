@@ -3,6 +3,8 @@ package models
 import (
 	"errors"
 	"fmt"
+
+	"gorm.io/gorm"
 )
 
 // Describe the attribut value of an Entity
@@ -187,4 +189,28 @@ func (v *Value) GetBoolVal() (bool, error) {
 		return false, ErrAskingForWrongType
 	}
 	return v.BoolVal, nil
+}
+
+// Return the Relation value as a *Entity
+// If the Value is null, it return nil
+// If the Value not of the requested type, it return ErrAskingForWrongType
+// If the Value.Attribut == nil, it panic
+func (v *Value) GetRelationVal(db *gorm.DB) (*Entity, error) {
+	err := v.CheckWhole()
+	if err != nil {
+		panic(err)
+	}
+	if v.Attribut.ValueType != "relation" {
+		return nil, ErrAskingForWrongType
+	}
+
+	if v.IsNull {
+		return nil, nil
+	}
+	var et Entity
+	err = db.Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").First(&et, v.RelationVal).Error
+	if err != nil {
+		return nil, err
+	}
+	return &et, nil
 }

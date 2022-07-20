@@ -64,7 +64,7 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 					value = models.Value{StringVal: v.(string)}
 
 				case float64:
-					if a.ValueType != "int" && a.ValueType != "float" {
+					if a.ValueType != "int" && a.ValueType != "float" && a.ValueType != "relation" {
 						return nil, fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t)
 					}
 					if utils.IsAnInt(v.(float64)) {
