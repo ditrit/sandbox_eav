@@ -15,9 +15,9 @@ type Attribut struct {
 	DefaultString string
 	DefaultFloat  float64
 
-	// the type the values of this attr are. Can be "int", "float", "string", "bool", "relationid"
+	// the type the values of this attr are. Can be "int", "float", "string", "bool", "relation"
 	ValueType          string
-	TargetEntityTypeId uint
+	TargetEntityTypeId uint // name of the EntityType
 
 	// GORM relations
 	EntityTypeId uint

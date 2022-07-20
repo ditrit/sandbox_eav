@@ -62,8 +62,10 @@ func (e *Entity) encodeAttributes() string {
 					panic(err)
 				}
 				row = fmt.Sprintf("%q: %t", f.Attribut.Name, boolValue)
+			case "relation":
+				row = fmt.Sprintf("%q: %d", f.Attribut.Name, f.RelationVal)
 			default:
-				panic(fmt.Errorf("the type %q is not a json type", typ))
+				panic(fmt.Errorf("the type %q is supported type by the EAV (not implemented)", typ))
 			}
 		}
 		pairs = append(pairs, row)

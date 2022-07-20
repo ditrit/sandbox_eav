@@ -8,11 +8,12 @@ import (
 // Describe the attribut value of an Entity
 type Value struct {
 	Model
-	IsNull    bool
-	StringVal string
-	FloatVal  float64
-	IntVal    int
-	BoolVal   bool
+	IsNull      bool
+	StringVal   string
+	FloatVal    float64
+	IntVal      int
+	BoolVal     bool
+	RelationVal uint
 
 	// GORM relations
 	EntityId   uint
@@ -80,6 +81,26 @@ func NewStringValue(attr *Attribut, s string) (*Value, error) {
 	}
 	val.IsNull = false
 	val.StringVal = s
+	val.Attribut = attr
+	return val, nil
+}
+
+// Create a new relation value.
+// If et is nil, then the function return an error
+// If et is of the wrong types
+func NewRelationValue(attr *Attribut, et *Entity) (*Value, error) {
+	val := new(Value)
+	if attr.ValueType != "relation" {
+		return nil, fmt.Errorf("can't create a new relation value with a %s attribut", attr.ValueType)
+	}
+	if et == nil {
+		return nil, fmt.Errorf("can't create a new relation with a nill entity pointer")
+	}
+	if et.EntityType.ID != attr.TargetEntityTypeId {
+		return nil, fmt.Errorf("can't create a relation with an entity of wrong EntityType. (got the entityid=%d, expected=%d)", et.EntityType.ID, attr.TargetEntityTypeId)
+	}
+	val.IsNull = false
+	val.RelationVal = et.ID
 	val.Attribut = attr
 	return val, nil
 }

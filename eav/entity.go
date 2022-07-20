@@ -69,7 +69,11 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 					}
 					if utils.IsAnInt(v.(float64)) {
 						// is an int
-						value = models.Value{IntVal: int(v.(float64))}
+						if a.ValueType == "relation" {
+							value = models.Value{RelationVal: uint(v.(float64))}
+						} else {
+							value = models.Value{IntVal: int(v.(float64))}
+						}
 					} else {
 						// is a float
 						value = models.Value{FloatVal: v.(float64)}
