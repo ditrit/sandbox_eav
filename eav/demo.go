@@ -15,11 +15,11 @@ func PopulateDatabase(db *gorm.DB) error {
 	db.Create(bob)
 
 	// Defining a bird
-	colorAttr := &models.Attribut{Name: "color", ValueType: "string", IsNullable: false}
-	specieAttr := &models.Attribut{Name: "specie", ValueType: "string", IsNullable: false}
-	heightAttr := &models.Attribut{Name: "height", ValueType: "int", IsNullable: true}
-	weightAttr := &models.Attribut{Name: "weight", ValueType: "float", IsNullable: true}
-	ownerAttr := &models.Attribut{Name: "owner", ValueType: "relation", IsNullable: true, TargetEntityTypeId: HumanType.ID}
+	colorAttr := &models.Attribut{Name: "color", ValueType: "string", Required: true}
+	specieAttr := &models.Attribut{Name: "specie", ValueType: "string", Required: true}
+	heightAttr := &models.Attribut{Name: "height", ValueType: "int", Required: false}
+	weightAttr := &models.Attribut{Name: "weight", ValueType: "float", Required: false}
+	ownerAttr := &models.Attribut{Name: "owner", ValueType: "relation", Required: false, TargetEntityTypeId: HumanType.ID}
 
 	BirdType := &models.EntityType{
 		Name: "bird",

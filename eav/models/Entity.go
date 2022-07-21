@@ -23,6 +23,9 @@ func (e *Entity) EncodeToJson() []byte {
 		fmt.Sprintf("%q: %d", "id", e.ID),
 	)
 	pairs = append(pairs,
+		fmt.Sprintf("%q: %q", "type", e.EntityType.Name),
+	)
+	pairs = append(pairs,
 		fmt.Sprintf("%q: %s", "attrs", e.encodeAttributes()),
 	)
 	return []byte(utils.BuildJsonFromStrings(pairs))
@@ -34,7 +37,7 @@ func (e *Entity) encodeAttributes() string {
 	var row string
 	for _, f := range e.Fields {
 		if f.IsNull {
-			row = fmt.Sprintf("%q: %s", f.Attribut.Name, "null")
+			continue
 		} else {
 			typ := f.Attribut.ValueType
 			switch typ {

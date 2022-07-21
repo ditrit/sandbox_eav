@@ -1,4 +1,4 @@
-package eav
+package operations
 
 import (
 	"strconv"
@@ -64,3 +64,23 @@ func GetEntitiesWithParams(db *gorm.DB, ett *models.EntityType, params map[strin
 	}
 	return resultSet
 }
+
+// type ConditionRequest struct {
+// 	attrs      []string // ["bird.color", "human.name" ]
+// 	tables     []string //["bird", "human"]
+// 	conditions []Condition
+// }
+
+// type Condition struct {
+// 	operator    string
+// 	comparaison Comparaison
+// 	conditions  []Condition
+// }
+
+// type Comparaison struct {
+// 	operator string
+// 	table1   string
+// 	attr1    string
+// 	table2   string
+// 	attr2    string
+// }

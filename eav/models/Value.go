@@ -31,8 +31,8 @@ var (
 // Create a new null value
 func NewNullValue(attr *Attribut) (*Value, error) {
 	val := new(Value)
-	if !attr.IsNullable {
-		return nil, fmt.Errorf("can't create new null with an non nullable attribut")
+	if attr.Required {
+		return nil, fmt.Errorf("can't create new null value for a required attribut")
 	}
 	val.IsNull = true
 	val.Attribut = attr

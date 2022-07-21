@@ -1,4 +1,4 @@
-package eav
+package operations
 
 import (
 	"fmt"
@@ -8,46 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetEntityType(db *gorm.DB, id uint) (*models.EntityType, error) {
-	var ett models.EntityType
-	err := db.Preload("Attributs").First(&ett, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &ett, nil
-}
-
-func GetEntityTypeByName(db *gorm.DB, name string) (*models.EntityType, error) {
-	var ett models.EntityType
-	err := db.Preload("Attributs").First(&ett, "name = ?", name).Error
-	if err != nil {
-		return nil, err
-	}
-	return &ett, nil
-}
-
-func GetAllEntityType(db *gorm.DB) []*models.EntityType {
-	var etts []*models.EntityType
-	db.Preload("Attributs").Find(&etts)
-	return etts
-}
-
-func GetEntity(db *gorm.DB, id uint) (*models.Entity, error) {
-	var et models.Entity
-	err := db.Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").First(&et, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &et, nil
-}
-
-// Return all Entities for the ett EntityType
-func GetEntities(db *gorm.DB, ett *models.EntityType) []*models.Entity {
-	var ets []*models.Entity
-	db.Where("entity_type_id = ?", ett.ID).Preload("Fields").Preload("Fields.Attribut").Preload("EntityType.Attributs").Preload("EntityType").Find(&ets)
-	return ets
-}
-
+// Create a brand new entity
 func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interface{}) (*models.Entity, error) {
 	var et models.Entity
 	for _, a := range ett.Attributs {
@@ -86,8 +47,8 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 					value = models.Value{BoolVal: v.(bool)}
 
 				case nil:
-					if !a.IsNullable {
-						return nil, fmt.Errorf("types dont match (expected=%v got=%T)", a.ValueType, t)
+					if a.Required {
+						return nil, fmt.Errorf("can't have a null field with a required attribut")
 					}
 					value = models.Value{IsNull: true}
 
@@ -96,20 +57,24 @@ func CreateEntity(db *gorm.DB, ett *models.EntityType, attrs map[string]interfac
 				}
 			}
 		}
-		if !a.IsNullable && !present {
-			return nil, fmt.Errorf("field %q is missing and can't be null", a.Name)
+		if a.Required && !present {
+			return nil, fmt.Errorf("field %q is missing and is required", a.Name)
 		}
 		if !present {
-			value = models.Value{IsNull: true}
+			if a.Default {
+				v, err := a.GetNewDefaultValue()
+				if err != nil {
+					return nil, err
+				} else {
+					value = *v
+				}
+			} else {
+				value = models.Value{IsNull: true}
+			}
 		}
 		value.Attribut = a
 		et.Fields = append(et.Fields, &value)
 	}
 	et.EntityType = ett
 	return &et, db.Create(&et).Error
-}
-
-func ModifyEntity(db *gorm.DB, ett *models.EntityType, et *models.Entity, attrs map[string]interface{}) error {
-
-	return nil
 }

@@ -9,26 +9,32 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ditrit/sandbox_eav/eav"
 	"github.com/ditrit/sandbox_eav/eav/models"
+	"github.com/ditrit/sandbox_eav/eav/operations"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
 func ErrMsg(msg string, w http.ResponseWriter) {
 	w.Write(
-		[]byte(fmt.Sprintf(
-			`{"error": %q}`,
-			msg,
-		)),
+		[]byte(GetErrMsg(msg)),
 	)
 }
 
+// return json formated string to be consumed by frontend or client
+func GetErrMsg(msg string) string {
+	return fmt.Sprintf(
+		`{"error": %q}`,
+		msg,
+	)
+}
+
+// The handler reponsible for the retreival of entities (and filter it if needed)
 func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		entityType := vars["type"]
-		ett, err := eav.GetEntityTypeByName(db, entityType)
+		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.NotFound(w, r)
@@ -41,7 +47,7 @@ func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			qp[k] = v[0]
 		}
 		fmt.Println(qp)
-		var collection []*models.Entity = eav.GetEntitiesWithParams(db, ett, qp)
+		var collection []*models.Entity = operations.GetEntitiesWithParams(db, ett, qp)
 
 		var b strings.Builder
 		b.WriteString("[")
@@ -56,11 +62,12 @@ func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// The handler reponsible for the retreival of une entity
 func GetObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		entityType := vars["type"]
-		ett, err := eav.GetEntityTypeByName(db, entityType)
+		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.NotFound(w, r)
@@ -74,7 +81,7 @@ func GetObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		obj, err := eav.GetEntity(db, uint(id))
+		obj, err := operations.GetEntity(db, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.NotFound(w, r)
@@ -90,11 +97,12 @@ func GetObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// The handler reponsible for the deletion of entities and their associated value
 func DeleteObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		entityType := vars["type"]
-		ett, err := eav.GetEntityTypeByName(db, entityType)
+		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.NotFound(w, r)
@@ -106,12 +114,12 @@ func DeleteObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			ErrMsg("The id you provided is not an int", w)
 			return
 		}
-		obj, err := eav.GetEntity(db, uint(id))
+		obj, err := operations.GetEntity(db, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.NotFound(w, r)
-				ErrMsg(err.Error(), w)
 
+				ErrMsg(err.Error(), w)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		}
@@ -119,20 +127,23 @@ func DeleteObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			ErrMsg("This object doesn't belong to this type", w)
 		}
-		for _, v := range obj.Fields {
-			db.Delete(v)
+		err = operations.DeleteEntity(db, obj)
+		if err != nil {
+			ErrMsg("This object doesn't belong to this type", w)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
-		db.Delete(obj)
+
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	}
 
 }
 
+// The handler reponsible for the creation of entities
 func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		entityType := vars["type"]
-		ett, err := eav.GetEntityTypeByName(db, entityType)
+		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				ErrMsg("can't find type", w)
@@ -148,7 +159,7 @@ func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		var cr createReq
 		json.Unmarshal(content, &cr)
 		fmt.Println(cr)
-		et, err := eav.CreateEntity(db, ett, cr.Attrs)
+		et, err := operations.CreateEntity(db, ett, cr.Attrs)
 		if err != nil {
 			http.NotFound(w, r)
 			ErrMsg(err.Error(), w)
@@ -166,11 +177,12 @@ type createReq struct {
 	Attrs map[string]interface{}
 }
 
+// The handler reponsible for the updates of entities
 func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		entityType := vars["type"]
-		ett, err := eav.GetEntityTypeByName(db, entityType)
+		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				ErrMsg("can't find type", w)
@@ -189,7 +201,7 @@ func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			ErrMsg("The id you provided is not an int", w)
 			return
 		}
-		obj, err := eav.GetEntity(db, uint(id))
+		obj, err := operations.GetEntity(db, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.NotFound(w, r)
@@ -202,28 +214,20 @@ func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var mr modifyReq
-		json.Unmarshal(content, &mr)
-		fmt.Println(mr)
-		et, err := eav.CreateEntity(db, ett, mr.Attrs)
+		err = json.Unmarshal(content, &mr)
 		if err != nil {
-			http.NotFound(w, r)
-			ErrMsg(err.Error(), w)
+			http.Error(w, GetErrMsg(err.Error()), 500)
 			return
 		}
-		et.ID = obj.ID
-		for _, f := range obj.Fields {
-			db.Delete(f)
-		}
-		db.Delete(obj)
+		fmt.Println(mr.Attrs)
 
-		db.Save(et)
+		operations.UpdateEntity(db, obj, mr.Attrs)
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.Write(et.EncodeToJson())
+		w.Write(obj.EncodeToJson())
 
 	}
 }
 
 type modifyReq struct {
-	id    int
 	Attrs map[string]interface{}
 }

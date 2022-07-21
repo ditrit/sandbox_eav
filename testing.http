@@ -6,6 +6,7 @@
 
 @birdid = 2
 
+
 # GET all birds
 GET {{URI}}/objects/bird/ HTTP/1.1
 content-type: application/json
@@ -13,7 +14,7 @@ content-type: application/json
 ###
 
 # GET all birds that are blue
-GET {{URI}}/objects/bird/?color=blue&height=8 HTTP/1.1
+GET {{URI}}/objects/bird/?color=blue&height=blue HTTP/1.1
 content-type: application/json
 
 ###
@@ -73,7 +74,8 @@ content-type: application/json
 "attrs": {
     "color": "orange",
     "specie": "bird with null field",
-    "height": null
+    "height": 50,
+    "weight": null
 }
 }
 
@@ -107,14 +109,13 @@ content-type: application/json
 ###
 
 # UPDATE a bird
-PUT {{URI}}/objects/bird/{{birdid}} HTTP/1.1
+PUT {{URI}}/objects/bird/2 HTTP/1.1
 content-type: application/json
 
 {
     "attrs": {
         "color": "red",
         "specie": "rouge gorge",
-        "height": null,
-        "weight": 8.55
+        "height": null
     }
 }
