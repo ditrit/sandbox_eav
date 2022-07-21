@@ -4,27 +4,35 @@
 
 @URI = http://{{hostname}}:{{port}}/v1
 
+@birdid = 2
+
 # GET all birds
-GET {{URI}}/objects/bird HTTP/1.1
+GET {{URI}}/objects/bird/ HTTP/1.1
+content-type: application/json
+
+###
+
+# GET all birds that are blue
+GET {{URI}}/objects/bird/?color=blue&height=8 HTTP/1.1
 content-type: application/json
 
 ###
 
 # GET a bird
-GET {{URI}}/objects/bird/1 HTTP/1.1
-content-type: application/json
-
-###
-
-# DELETE a bird
-DELETE {{URI}}/objects/bird HTTP/1.1
+GET {{URI}}/objects/bird/{{birdid}} HTTP/1.1
 content-type: application/json
 
 ###
 
 # => SHOULD FAIl
 # DELETE all bird 
-DELETE {{URI}}/objects/bird/1 HTTP/1.1
+DELETE {{URI}}/objects/bird/ HTTP/1.1
+content-type: application/json
+
+###
+
+# DELETE a bird
+DELETE {{URI}}/objects/bird/{{birdid}} HTTP/1.1
 content-type: application/json
 
 ###
@@ -37,7 +45,8 @@ content-type: application/json
 "attrs": {
     "color": "blue",
     "specie": "aigle",
-    "height": 105
+    "height": 105,
+    "owner": 1
 }
 }
 
@@ -98,7 +107,7 @@ content-type: application/json
 ###
 
 # UPDATE a bird
-PUT {{URI}}/objects/bird/1 HTTP/1.1
+PUT {{URI}}/objects/bird/{{birdid}} HTTP/1.1
 content-type: application/json
 
 {

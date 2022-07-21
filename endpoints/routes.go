@@ -35,7 +35,13 @@ func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		var collection []*models.Entity = eav.GetEntities(db, ett)
+		queryparams := r.URL.Query()
+		var qp map[string]string = make(map[string]string)
+		for k, v := range queryparams {
+			qp[k] = v[0]
+		}
+		fmt.Println(qp)
+		var collection []*models.Entity = eav.GetEntitiesWithParams(db, ett, qp)
 
 		var b strings.Builder
 		b.WriteString("[")
