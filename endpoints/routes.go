@@ -15,12 +15,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func ErrMsg(msg string, w http.ResponseWriter) {
-	w.Write(
-		[]byte(GetErrMsg(msg)),
-	)
-}
-
 // return json formated string to be consumed by frontend or client
 func GetErrMsg(msg string) string {
 	return fmt.Sprintf(
@@ -37,10 +31,10 @@ func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use a type which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use a type which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		queryparams := r.URL.Query()
@@ -59,6 +53,7 @@ func GetObjects(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		}
 		b.WriteString(strings.Join(pairs, ","))
 		b.WriteString("]")
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.Write([]byte(b.String()))
 	}
@@ -72,33 +67,34 @@ func GetObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use a type which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use a type which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		id, err := strconv.Atoi(vars["id"])
 
 		if err != nil {
-			http.Error(w, "The id you provided is not an int", http.StatusBadRequest)
+			http.Error(w, GetErrMsg("The id you provided is not an int"), http.StatusBadRequest)
 			return
 		}
 
 		obj, err := operations.GetEntity(db, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use an id which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use an id which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		if obj.EntityTypeId != ett.ID {
-			http.Error(w, "This object doesn't belong to this type", http.StatusNotFound)
+			http.Error(w, GetErrMsg("This object doesn't belong to this type"), http.StatusNotFound)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
 		w.Write(obj.EncodeToJson())
 	}
 }
@@ -111,37 +107,37 @@ func DeleteObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use a type which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use a type which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		id, err := strconv.Atoi(vars["id"])
 		if err != nil {
-			http.Error(w, "The id you provided is not an int", http.StatusBadRequest)
+			http.Error(w, GetErrMsg("The id you provided is not an int"), http.StatusBadRequest)
 			return
 		}
 		obj, err := operations.GetEntity(db, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use an id which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use an id which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		if obj.EntityTypeId != ett.ID {
-			http.Error(w, "This object doesn't belong to this type", http.StatusNotFound)
+			http.Error(w, GetErrMsg("This object doesn't belong to this type"), http.StatusNotFound)
 			return
 		}
 		err = operations.DeleteEntity(db, obj)
 		if err != nil {
-			http.Error(w, "Deletion failed", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg("Deletion failed"), http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
 	}
 
 }
@@ -154,15 +150,15 @@ func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use a type which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use a type which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, "Can't open request body", http.StatusBadRequest)
+			http.Error(w, GetErrMsg("Can't open request body"), http.StatusBadRequest)
 			return
 		}
 		var cr createReq
@@ -170,7 +166,7 @@ func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(cr)
 		et, err := operations.CreateEntity(db, ett, cr.Attrs)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -193,47 +189,48 @@ func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 		ett, err := operations.GetEntityTypeByName(db, entityType)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use a type which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use a type which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, "Can't open request body", http.StatusBadRequest)
+			http.Error(w, GetErrMsg("Can't open request body"), http.StatusBadRequest)
 			return
 		}
 
 		id, err := strconv.Atoi(vars["id"])
 		if err != nil {
-			http.Error(w, "The id you provided is not an int", http.StatusBadRequest)
+			http.Error(w, GetErrMsg("The id you provided is not an int"), http.StatusBadRequest)
 			return
 		}
 		obj, err := operations.GetEntity(db, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Record not found, please use an id which is in the database", http.StatusNotFound)
+				http.Error(w, GetErrMsg("Record not found, please use an id which is in the database"), http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		if obj.EntityTypeId != ett.ID {
-			http.Error(w, "This object doesn't belong to this type", http.StatusNotFound)
+			http.Error(w, GetErrMsg("This object doesn't belong to this type"), http.StatusNotFound)
 			return
 		}
 
 		var mr modifyReq
 		err = json.Unmarshal(content, &mr)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			return
 		}
 		fmt.Println(mr.Attrs)
 
 		operations.UpdateEntity(db, obj, mr.Attrs)
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
 		w.Write(obj.EncodeToJson())
 
 	}

@@ -14,7 +14,7 @@ content-type: application/json
 ###
 
 # GET all birds that are blue
-GET {{URI}}/objects/bird/?color=blue&height=blue HTTP/1.1
+GET {{URI}}/objects/bird/?color=blue&height=8 HTTP/1.1
 content-type: application/json
 
 ###
@@ -44,9 +44,9 @@ content-type: application/json
 
 {
 "attrs": {
-    "color": "blue",
+    "color": "red",
     "specie": "aigle",
-    "height": 105,
+    "height": 106,
     "owner": 1
 }
 }
@@ -109,7 +109,7 @@ content-type: application/json
 ###
 
 # UPDATE a bird
-PUT {{URI}}/objects/bird/2 HTTP/1.1
+PUT {{URI}}/objects/bird/3 HTTP/1.1
 content-type: application/json
 
 {
