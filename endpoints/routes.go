@@ -80,17 +80,16 @@ func GetObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		obj, err := operations.GetEntity(db, uint(id))
+		obj, err := operations.GetEntity(db, ett, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.Error(w, GetErrMsg("Record not found, please use an id which is in the database"), http.StatusNotFound)
 				return
+			} else if errors.Is(err, operations.ErrIdDontMatchEntityType) {
+				http.Error(w, GetErrMsg(err.Error()), http.StatusBadRequest)
+			} else {
+				http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			}
-			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
-			return
-		}
-		if obj.EntityTypeId != ett.ID {
-			http.Error(w, GetErrMsg("This object doesn't belong to this type"), http.StatusNotFound)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -118,17 +117,16 @@ func DeleteObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, GetErrMsg("The id you provided is not an int"), http.StatusBadRequest)
 			return
 		}
-		obj, err := operations.GetEntity(db, uint(id))
+		obj, err := operations.GetEntity(db, ett, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.Error(w, GetErrMsg("Record not found, please use an id which is in the database"), http.StatusNotFound)
 				return
+			} else if errors.Is(err, operations.ErrIdDontMatchEntityType) {
+				http.Error(w, GetErrMsg(err.Error()), http.StatusBadRequest)
+			} else {
+				http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			}
-			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
-			return
-		}
-		if obj.EntityTypeId != ett.ID {
-			http.Error(w, GetErrMsg("This object doesn't belong to this type"), http.StatusNotFound)
 			return
 		}
 		err = operations.DeleteEntity(db, obj)
@@ -206,17 +204,16 @@ func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, GetErrMsg("The id you provided is not an int"), http.StatusBadRequest)
 			return
 		}
-		obj, err := operations.GetEntity(db, uint(id))
+		obj, err := operations.GetEntity(db, ett, uint(id))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.Error(w, GetErrMsg("Record not found, please use an id which is in the database"), http.StatusNotFound)
 				return
+			} else if errors.Is(err, operations.ErrIdDontMatchEntityType) {
+				http.Error(w, GetErrMsg(err.Error()), http.StatusBadRequest)
+			} else {
+				http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
 			}
-			http.Error(w, GetErrMsg(err.Error()), http.StatusInternalServerError)
-			return
-		}
-		if obj.EntityTypeId != ett.ID {
-			http.Error(w, GetErrMsg("This object doesn't belong to this type"), http.StatusNotFound)
 			return
 		}
 
