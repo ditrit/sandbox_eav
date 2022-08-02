@@ -126,6 +126,9 @@ func (v *Value) GetStringVal() (string, error) {
 	}
 
 	if v.IsNull {
+		if v.Attribut.Default {
+			return v.Attribut.DefaultString, nil
+		}
 		return "", ErrValueIsNull
 	}
 	if v.Attribut.ValueType != "string" {
@@ -145,6 +148,9 @@ func (v *Value) GetFloatVal() (float64, error) {
 	}
 
 	if v.IsNull {
+		if v.Attribut.Default {
+			return v.Attribut.DefaultFloat, nil
+		}
 		return 0.0, ErrValueIsNull
 	}
 	if v.Attribut.ValueType != "float" {
@@ -164,6 +170,9 @@ func (v *Value) GetIntVal() (int, error) {
 	}
 
 	if v.IsNull {
+		if v.Attribut.Default {
+			return v.Attribut.DefaultInt, nil
+		}
 		return 0, ErrValueIsNull
 	}
 	if v.Attribut.ValueType != "int" {
@@ -183,6 +192,9 @@ func (v *Value) GetBoolVal() (bool, error) {
 	}
 
 	if v.IsNull {
+		if v.Attribut.Default {
+			return v.Attribut.DefaultBool, nil
+		}
 		return false, ErrValueIsNull
 	}
 	if v.Attribut.ValueType != "bool" {
