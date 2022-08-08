@@ -226,3 +226,87 @@ func (v *Value) GetRelationVal(db *gorm.DB) (*Entity, error) {
 	}
 	return &et, nil
 }
+
+// Return the underlying value as en interface
+func (v *Value) Value() interface{} {
+	err := v.CheckWhole()
+	if err != nil {
+		panic(err)
+	}
+	switch v.Attribut.ValueType {
+	case StringValueType:
+		return v.StringVal
+	case IntValueType:
+		return v.IntVal
+	case FloatValueType:
+		return v.FloatVal
+	case BooleanValueType:
+		return v.BoolVal
+	case RelationValueType:
+		return v.RelationVal
+	default:
+		panic(fmt.Errorf(
+			"hmm this Attribut.ValueType does not exists (got=%s)",
+			v.Attribut.ValueType,
+		))
+	}
+}
+
+// When Value isNull, it is impossible to build a Key/Value pair
+var ErrCantBuildKVPairForNullValue = errors.New("can't build key/value pair from null value")
+
+// Build a key/value pair to be included in a JSON
+// If the value hold an int=8 with an attribut named "voila" then the string returned will be `"voila":8`
+func (v *Value) BuildJsonKVPair() (string, error) {
+	err := v.CheckWhole()
+	if err != nil {
+		panic(err)
+	}
+	var row string
+	typ := v.Attribut.ValueType
+	switch typ {
+	case StringValueType:
+		stringValue, err := v.GetStringVal()
+		if err != nil {
+			if err == ErrValueIsNull {
+				return "", ErrCantBuildKVPairForNullValue
+			}
+			panic(err)
+		}
+
+		row = fmt.Sprintf("%q: %q", v.Attribut.Name, stringValue)
+	case IntValueType:
+		intValue, err := v.GetIntVal()
+		if err != nil {
+			if err == ErrValueIsNull {
+				return "", ErrCantBuildKVPairForNullValue
+			}
+			panic(err)
+		}
+		row = fmt.Sprintf("%q: %d", v.Attribut.Name, intValue)
+	case FloatValueType:
+		floatValue, err := v.GetFloatVal()
+		if err != nil {
+			if err == ErrValueIsNull {
+				return "", ErrCantBuildKVPairForNullValue
+			}
+			panic(err)
+		}
+		row = fmt.Sprintf("%q: %f", v.Attribut.Name, floatValue)
+	case BooleanValueType:
+		boolValue, err := v.GetBoolVal()
+		if err != nil {
+			if err == ErrValueIsNull {
+				return "", ErrCantBuildKVPairForNullValue
+			}
+			panic(err)
+		}
+		row = fmt.Sprintf("%q: %t", v.Attribut.Name, boolValue)
+	case RelationValueType:
+		row = fmt.Sprintf("%q: %d", v.Attribut.Name, v.RelationVal)
+	default:
+		panic(fmt.Errorf("the type %q is not supported by the EAV (not implemented)", typ))
+
+	}
+	return row, nil
+}

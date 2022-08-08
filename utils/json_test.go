@@ -33,3 +33,26 @@ func TestBuildJsonFromString(t *testing.T) {
 	}
 
 }
+
+func TestBuildJsonListFromString(t *testing.T) {
+	testData := []jsonTest{
+		{
+			input:  []string{"{\"voila\":1}"},
+			output: "[{\"voila\":1}]",
+		},
+		{
+			input: []string{
+				"{\"voila\":1}",
+				"{\"45\":\"231115421 351635 6351sd6351 354qsd35 4qs\"}",
+			},
+			output: "[{\"voila\":1},{\"45\":\"231115421 351635 6351sd6351 354qsd35 4qs\"}]",
+		},
+	}
+	for _, td := range testData {
+		result := utils.BuildJsonListFromStrings(td.input)
+		if result != td.output {
+			t.Errorf("Expected %s, got %s", td.output, result)
+		}
+	}
+
+}

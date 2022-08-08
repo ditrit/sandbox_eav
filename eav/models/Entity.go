@@ -34,44 +34,34 @@ func (e *Entity) EncodeToJson() []byte {
 // return the attribut in a json encoded string
 func (e *Entity) encodeAttributes() string {
 	var pairs []string
-	var row string
 	for _, f := range e.Fields {
-		if f.IsNull {
-			continue
-		} else {
-			typ := f.Attribut.ValueType
-			switch typ {
-			case "string":
-				stringValue, err := f.GetStringVal()
-				if err != nil {
-					panic(err)
-				}
-				row = fmt.Sprintf("%q: %q", f.Attribut.Name, stringValue)
-			case "int":
-				intValue, err := f.GetIntVal()
-				if err != nil {
-					panic(err)
-				}
-				row = fmt.Sprintf("%q: %d", f.Attribut.Name, intValue)
-			case "float":
-				floatValue, err := f.GetFloatVal()
-				if err != nil {
-					panic(err)
-				}
-				row = fmt.Sprintf("%q: %f", f.Attribut.Name, floatValue)
-			case "bool":
-				boolValue, err := f.GetBoolVal()
-				if err != nil {
-					panic(err)
-				}
-				row = fmt.Sprintf("%q: %t", f.Attribut.Name, boolValue)
-			case "relation":
-				row = fmt.Sprintf("%q: %d", f.Attribut.Name, f.RelationVal)
-			default:
-				panic(fmt.Errorf("the type %q is supported type by the EAV (not implemented)", typ))
+		pair, err := f.BuildJsonKVPair()
+		if err != nil {
+			if err == ErrCantBuildKVPairForNullValue {
+				continue
 			}
+			panic(err)
 		}
-		pairs = append(pairs, row)
+		pairs = append(pairs, pair)
 	}
 	return utils.BuildJsonFromStrings(pairs)
+}
+
+func (e *Entity) GetValue(attrName string) (interface{}, error) {
+	var attrId uint = 0
+	for _, a := range e.EntityType.Attributs {
+		if a.Name == attrName {
+			attrId = a.ID
+			break
+		}
+	}
+	if attrId == 0 {
+		return nil, fmt.Errorf("attr not found: got=%s", attrName)
+	}
+	for _, v := range e.Fields {
+		if v.AttributId == attrId {
+			return v.Value(), nil
+		}
+	}
+	return nil, fmt.Errorf("value not found")
 }
