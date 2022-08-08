@@ -1,5 +1,5 @@
-// This file contain function that are helpfull to test thing while adding new feature. It should never be added to a production release
-package eav
+// This file contain function that are helpfull to test things while adding new feature. It should never be added to a production release
+package main
 
 import (
 	"github.com/ditrit/sandbox_eav/eav/models"
@@ -17,8 +17,8 @@ func PopulateDatabase(db *gorm.DB) error {
 	// Defining a bird
 	colorAttr := &models.Attribut{Name: "color", ValueType: "string", Required: true}
 	specieAttr := &models.Attribut{Name: "specie", ValueType: "string", Required: true}
-	heightAttr := &models.Attribut{Name: "height", ValueType: "int", Required: false}
-	weightAttr := &models.Attribut{Name: "weight", ValueType: "float", Required: false}
+	heightAttr := &models.Attribut{Name: "height", ValueType: "int", Default: true, DefaultInt: 12, Required: false}
+	weightAttr := &models.Attribut{Name: "weight", ValueType: "float", Default: true, DefaultFloat: 12.500, Required: false}
 	ownerAttr := &models.Attribut{Name: "owner", ValueType: "relation", Required: false, TargetEntityTypeId: HumanType.ID}
 
 	BirdType := &models.EntityType{
@@ -27,6 +27,7 @@ func PopulateDatabase(db *gorm.DB) error {
 	BirdType.Attributs = append(
 		BirdType.Attributs, colorAttr, specieAttr, heightAttr, weightAttr, ownerAttr,
 	)
+
 	val1, err := models.NewStringValue(colorAttr, "blue")
 	if err != nil {
 		panic(err)
