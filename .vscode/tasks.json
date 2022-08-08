@@ -1,0 +1,37 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "populate",
+            "type": "shell",
+            "command": "./scripts/populate.sh",
+            "presentation": {
+                "reveal": "never",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "printB",
+            "type": "shell",
+            "command": "./scripts/printAllBirds.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "godoc",
+            "type": "shell",
+            "command": "godoc -http=:6060",
+            "presentation": {
+                "reveal": "never",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
