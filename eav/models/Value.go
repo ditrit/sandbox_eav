@@ -42,7 +42,7 @@ func NewNullValue(attr *Attribut) (*Value, error) {
 // Create a new int value
 func NewIntValue(attr *Attribut, i int) (*Value, error) {
 	val := new(Value)
-	if attr.ValueType != "int" {
+	if attr.ValueType != IntValueType {
 		return nil, fmt.Errorf("can't create a new int value with a %s attribut", attr.ValueType)
 	}
 	val.IsNull = false
@@ -54,7 +54,7 @@ func NewIntValue(attr *Attribut, i int) (*Value, error) {
 // Create a new bool value
 func NewBoolValue(attr *Attribut, b bool) (*Value, error) {
 	val := new(Value)
-	if attr.ValueType != "bool" {
+	if attr.ValueType != BooleanValueType {
 		return nil, fmt.Errorf("can't create a new bool value with a %s attribut", attr.ValueType)
 	}
 	val.IsNull = false
@@ -66,7 +66,7 @@ func NewBoolValue(attr *Attribut, b bool) (*Value, error) {
 // Create a new float value
 func NewFloatValue(attr *Attribut, f float64) (*Value, error) {
 	val := new(Value)
-	if attr.ValueType != "float" {
+	if attr.ValueType != FloatValueType {
 		return nil, fmt.Errorf("can't create a new float value with a %s attribut", attr.ValueType)
 	}
 	val.IsNull = false
@@ -78,7 +78,7 @@ func NewFloatValue(attr *Attribut, f float64) (*Value, error) {
 // Create a new string value
 func NewStringValue(attr *Attribut, s string) (*Value, error) {
 	val := new(Value)
-	if attr.ValueType != "string" {
+	if attr.ValueType != StringValueType {
 		return nil, fmt.Errorf("can't create a new string value with a %s attribut", attr.ValueType)
 	}
 	val.IsNull = false
@@ -92,7 +92,7 @@ func NewStringValue(attr *Attribut, s string) (*Value, error) {
 // If et is of the wrong types
 func NewRelationValue(attr *Attribut, et *Entity) (*Value, error) {
 	val := new(Value)
-	if attr.ValueType != "relation" {
+	if attr.ValueType != RelationValueType {
 		return nil, fmt.Errorf("can't create a new relation value with a %s attribut", attr.ValueType)
 	}
 	if et == nil {
@@ -131,7 +131,7 @@ func (v *Value) GetStringVal() (string, error) {
 		}
 		return "", ErrValueIsNull
 	}
-	if v.Attribut.ValueType != "string" {
+	if v.Attribut.ValueType != StringValueType {
 		return "", ErrAskingForWrongType
 	}
 	return v.StringVal, nil
@@ -153,7 +153,7 @@ func (v *Value) GetFloatVal() (float64, error) {
 		}
 		return 0.0, ErrValueIsNull
 	}
-	if v.Attribut.ValueType != "float" {
+	if v.Attribut.ValueType != FloatValueType {
 		return 0.0, ErrAskingForWrongType
 	}
 	return v.FloatVal, nil
@@ -175,7 +175,7 @@ func (v *Value) GetIntVal() (int, error) {
 		}
 		return 0, ErrValueIsNull
 	}
-	if v.Attribut.ValueType != "int" {
+	if v.Attribut.ValueType != IntValueType {
 		return 0, ErrAskingForWrongType
 	}
 	return v.IntVal, nil
@@ -197,7 +197,7 @@ func (v *Value) GetBoolVal() (bool, error) {
 		}
 		return false, ErrValueIsNull
 	}
-	if v.Attribut.ValueType != "bool" {
+	if v.Attribut.ValueType != BooleanValueType {
 		return false, ErrAskingForWrongType
 	}
 	return v.BoolVal, nil
@@ -212,7 +212,7 @@ func (v *Value) GetRelationVal(db *gorm.DB) (*Entity, error) {
 	if err != nil {
 		panic(err)
 	}
-	if v.Attribut.ValueType != "relation" {
+	if v.Attribut.ValueType != RelationValueType {
 		return nil, ErrAskingForWrongType
 	}
 
