@@ -1,0 +1,109 @@
+@hostname = localhost
+@port = 9999
+@host = {{hostname}}:{{port}}
+
+@URI = http://{{hostname}}:{{port}}/v1
+
+@birdid = 2
+
+
+GET {{URI}}/query HTTP/1.1
+content-type: application/json
+
+{
+  "attrs": ["bird.specie", "bird.weight", "bird.color", "bird.height"],
+  "table": "bird",
+  "condition": {
+    "operator": "&&",
+    "conditions": [
+      {   
+        "operator": "",
+        "comparaison": {
+          "operator": "==",
+          "expre1": {
+              "type": "ref",
+              "value": "bird.color"
+          } ,
+          "expre2": {
+              "type": "value",
+              "value": "blue"
+          }
+        }
+      },
+      {
+        "operator": "",
+        "comparaison": {
+          "operator": ">",
+          "expre1": {
+              "type": "ref",
+              "value": "bird.height"
+          } ,
+          "expre2": {
+              "type": "ref",
+              "value": "bird.weight"
+          }
+        }
+      }
+    ]
+    }
+}
+
+
+###
+
+
+# SELECT specie FROM bird WHERE bird.color == blue && bird.weight == null
+GET {{URI}}/query HTTP/1.1
+content-type: application/json
+
+{
+  "attrs": ["bird.specie", "human.name"],
+  "table": ["bird", "human"],
+  "condition": {
+    "operator": "&&",
+    "conditions": [
+      {   
+        "operator": "",
+        "comparaison": {
+          "operator": "==",
+          "expre1": {
+              "type": "ref",
+              "value": "bird.color"
+          } ,
+          "expre2": {
+              "type": "value",
+              "value": "blue"
+          }
+        }
+      },
+      {
+        "operator": "",
+        "comparaison": {
+          "operator": "!=",
+          "expre1": {
+              "type": "ref",
+              "value": "bird.owner"
+          } ,
+          "expre2": {
+              "type": "ref",
+              "value": "human.id"
+          }
+        }
+      },
+      {
+        "operator": "",
+        "comparaison": {
+          "operator": "==",
+          "expre1": {
+              "type": "ref",
+              "value": "human.name"
+          } ,
+          "expre2": {
+              "type": "value",
+              "value": "bob"
+          }
+        }
+      }
+    ]
+    }
+}
