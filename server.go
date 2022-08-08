@@ -28,17 +28,19 @@ func main() {
 	log.Println("Automigrate finished")
 
 	// This function create the test schema
-	eav.PopulateDatabase(db)
+	PopulateDatabase(db)
 
 	router := mux.NewRouter()
 	router.Use(endpoints.MiddlewareLogger)
-	// Get whole collection
-	router.HandleFunc("/v1/objects/{type}/", endpoints.GetObjects(db)).Methods("GET")
+	// Search for
+	router.HandleFunc("/v1/query", endpoints.Query(db)).Methods("GET")
 	// 405 method not allowed
 	router.HandleFunc("/v1/objects/{type}/", MethodNotAllowed).Methods("PUT", "DELETE")
 
 	//CRUD
 	router.HandleFunc("/v1/objects/{type}/{id}", endpoints.GetObject(db)).Methods("GET")
+	// Get whole collection
+	router.HandleFunc("/v1/objects/{type}/", endpoints.GetObjects(db)).Methods("GET")
 	router.HandleFunc("/v1/objects/{type}/{id}", endpoints.DeleteObject(db)).Methods("DELETE")
 	router.HandleFunc("/v1/objects/{type}", endpoints.CreateObject(db)).Methods("POST")
 	router.HandleFunc("/v1/objects/{type}/{id}", endpoints.ModifyObject(db)).Methods("PUT")
