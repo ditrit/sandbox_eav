@@ -2,6 +2,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/ditrit/sandbox_eav/eav/models"
 	"gorm.io/gorm"
 )
@@ -54,7 +56,7 @@ func PopulateDatabase(db *gorm.DB) error {
 	mesange.Fields = append(mesange.Fields, val1, val2, val3, val4, val5)
 
 	db.Create(mesange)
-	log("Finished populating the database")
+	fmt.Println("Finished populating the database")
 
 	return nil
 }
