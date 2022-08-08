@@ -11,6 +11,7 @@ var (
 	ErrIdDontMatchEntityType = errors.New("This object doesn't belong to this type")
 )
 
+// Get EntityType by id (uint)
 func GetEntityType(db *gorm.DB, id uint) (*models.EntityType, error) {
 	var ett models.EntityType
 	err := db.Preload("Attributs").First(&ett, id).Error
@@ -20,6 +21,7 @@ func GetEntityType(db *gorm.DB, id uint) (*models.EntityType, error) {
 	return &ett, nil
 }
 
+// Get EntityType by name (string)
 func GetEntityTypeByName(db *gorm.DB, name string) (*models.EntityType, error) {
 	var ett models.EntityType
 	err := db.Preload("Attributs").First(&ett, "name = ?", name).Error
@@ -29,6 +31,7 @@ func GetEntityTypeByName(db *gorm.DB, name string) (*models.EntityType, error) {
 	return &ett, nil
 }
 
+// Get all the types defined in the schema
 func GetAllEntityType(db *gorm.DB) []*models.EntityType {
 	var etts []*models.EntityType
 	db.Preload("Attributs").Find(&etts)
