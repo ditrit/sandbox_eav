@@ -11,8 +11,8 @@ GET {{URI}}/query HTTP/1.1
 content-type: application/json
 
 {
-  "attrs": ["bird.specie", "bird.weight", "bird.color", "bird.height"],
-  "table": "bird",
+  "attrs": ["bird.specie", "human.name"],
+  "tables": ["bird", "human"],
   "condition": {
     "operator": "&&",
     "conditions": [
@@ -36,11 +36,11 @@ content-type: application/json
           "operator": ">",
           "expre1": {
               "type": "ref",
-              "value": "bird.height"
+              "value": "bird.owner"
           } ,
           "expre2": {
               "type": "ref",
-              "value": "bird.weight"
+              "value": "human.id"
           }
         }
       }

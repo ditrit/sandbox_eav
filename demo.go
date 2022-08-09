@@ -13,8 +13,26 @@ func PopulateDatabase(db *gorm.DB) error {
 	HumanType := &models.EntityType{
 		Name: "human",
 	}
+	nameAttr := &models.Attribut{Name: "name", ValueType: "string", Required: true}
+	HumanType.Attributs = append(
+		HumanType.Attributs, nameAttr,
+	)
+	bobName, err := models.NewStringValue(nameAttr, "bob")
+	if err != nil {
+		panic(err)
+	}
 	bob := &models.Entity{EntityType: HumanType}
+	bob.Fields = append(bob.Fields, bobName)
 	db.Create(bob)
+
+	jeanName, err := models.NewStringValue(nameAttr, "jean")
+	if err != nil {
+		panic(err)
+	}
+	jean := &models.Entity{EntityType: HumanType}
+	jean.Fields = append(jean.Fields, jeanName)
+
+	db.Create(jean)
 
 	// Defining a bird
 	colorAttr := &models.Attribut{Name: "color", ValueType: "string", Required: true}

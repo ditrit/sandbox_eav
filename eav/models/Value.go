@@ -227,7 +227,7 @@ func (v *Value) GetRelationVal(db *gorm.DB) (*Entity, error) {
 	return &et, nil
 }
 
-// Return the underlying value as en interface
+// Return the underlying value as an interface
 func (v *Value) Value() interface{} {
 	err := v.CheckWhole()
 	if err != nil {
@@ -235,14 +235,49 @@ func (v *Value) Value() interface{} {
 	}
 	switch v.Attribut.ValueType {
 	case StringValueType:
-		return v.StringVal
+		s, err := v.GetStringVal()
+		if err != nil {
+			if errors.Is(err, ErrValueIsNull) {
+				return nil
+			}
+			//else panic
+			panic(err)
+		}
+		return s
 	case IntValueType:
-		return v.IntVal
+		i, err := v.GetIntVal()
+		if err != nil {
+			if errors.Is(err, ErrValueIsNull) {
+				return nil
+			}
+			//else panic
+			panic(err)
+		}
+		return i
 	case FloatValueType:
-		return v.FloatVal
+		f, err := v.GetFloatVal()
+		if err != nil {
+			if errors.Is(err, ErrValueIsNull) {
+				return nil
+			}
+			//else panic
+			panic(err)
+		}
+		return f
 	case BooleanValueType:
-		return v.BoolVal
+		b, err := v.GetFloatVal()
+		if err != nil {
+			if errors.Is(err, ErrValueIsNull) {
+				return nil
+			}
+			//else panic
+			panic(err)
+		}
+		return b
 	case RelationValueType:
+		if v.IsNull {
+			return nil
+		}
 		return v.RelationVal
 	default:
 		panic(fmt.Errorf(

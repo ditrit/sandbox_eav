@@ -3,12 +3,17 @@ package query
 import (
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/ditrit/sandbox_eav/eav/models"
 	"github.com/ditrit/sandbox_eav/eav/operations"
-	"github.com/ditrit/sandbox_eav/utils"
 	"gorm.io/gorm"
+)
+
+var (
+	debugLogger = log.New(os.Stdout, "QUERY: ", log.Ldate|log.Ltime|log.Lshortfile|log.Lmsgprefix)
 )
 
 // Represent a "sql" like query
@@ -17,8 +22,8 @@ type Query struct {
 	// The attributs that are selected to be returned
 	Attrs []string `json:"attrs"` // ["bird.color", "bird.weight"
 
-	// The table we will run the query on
-	Table string `json:"table"` // "bird"
+	// The tables we will run the query on
+	Tables []string `json:"tables"` // ["bird", "human"]
 
 	// The condition we will evaluate (similar to "WHERE ..." in SQL)
 	Condition EvaluationComposite `json:"condition"`
@@ -46,55 +51,79 @@ type Expression struct {
 }
 
 func (q *Query) Run(db *gorm.DB) ([]byte, error) {
-	var b strings.Builder
-
 	// used when returning an error
-	var emptyBytesSlice []byte = []byte("")
+	var emptyResponse []byte = []byte("[]")
 
-	ett, err := getTable(db, q.Table)
-	if err != nil {
-		return emptyBytesSlice, err
+	if len(q.Tables) == 0 {
+		return emptyResponse, fmt.Errorf("table names are needed to query the database")
 	}
-
-	entities, err := operations.GetEntities(db, ett)
+	// Retrieve EntityTypes.
+	etts, err := getEntityTypes(db, q.Tables...)
 	if err != nil {
-		return emptyBytesSlice, err
+		return emptyResponse, err
 	}
-	var elems []string
-	for _, et := range entities {
-		r, err := q.Condition.Eval(et)
+	// Retrieve Entities from with the EntityType aforementioned
+	var data = make([][]*models.Entity, len(etts))
+	for i, ett := range etts {
+		entities, err := operations.GetEntities(db, ett)
 		if err != nil {
-			return emptyBytesSlice, err
+			return emptyResponse, err
 		}
-		if r {
-			var fieldsToOutput []string
-			for _, atName := range q.Attrs {
-				v, err := getValue(et, atName)
-				if err != nil {
-					return emptyBytesSlice, err
-				}
-				pair, err := v.BuildJsonKVPair()
-				if err != nil {
-					return emptyBytesSlice, err
-				}
+		if len(entities) == 0 {
+			// if there is no entities to filter then we return an empty response
+			return []byte("[]"), nil
+		}
+		data[i] = entities
+	}
 
-				fieldsToOutput = append(fieldsToOutput, pair)
-			}
-			elems = append(elems, utils.BuildJsonFromStrings(fieldsToOutput))
+	// Make an IterManager holding the entities
+	entityManager := NewIterManager(data)
+	for {
+		// Get selected entities
+		selectedEntities := entityManager.GetSelectedElems()
+
+		// get Records from the selected Entities
+		rcs := buildRecordSliceFromEntities(selectedEntities)
+		fmt.Println("Records", rcs)
+		// pass thought the Condition system
+		r, err := q.Condition.Eval(rcs)
+		if err != nil {
+			return emptyResponse, err
+		}
+
+		// if the condition tree is validated, then add to the returnResultSet
+		if entityManager.Next() {
+			debugLogger.Println("entityManager exited it's main loop")
+			break
 		}
 	}
-	b.WriteString(utils.BuildJsonListFromStrings(elems))
-	return []byte(b.String()), nil
+	return emptyResponse, nil
 }
 
-// return the EntityType that matches the name
-func getTable(db *gorm.DB, name string) (*models.EntityType, error) {
+type Records map[string]any
 
-	ett, err := operations.GetEntityTypeByName(db, name)
-	if err != nil {
-		return nil, err
+func buildRecordSliceFromEntities(ets []*models.Entity) Records {
+	var rcs Records = Records{}
+	for _, et := range ets {
+		for _, f := range et.Fields {
+			key := fmt.Sprintf("%s.%s", et.EntityType.Name, f.Attribut.Name)
+			rcs[key] = f.Value()
+		}
 	}
-	return ett, nil
+	return rcs
+}
+
+// return the EntityTypes that matches the names
+func getEntityTypes(db *gorm.DB, names ...string) ([]*models.EntityType, error) {
+	var etts []*models.EntityType
+	for _, name := range names {
+		ett, err := operations.GetEntityTypeByName(db, name)
+		if err != nil {
+			return nil, err
+		}
+		etts = append(etts, ett)
+	}
+	return etts, nil
 }
 
 func (ec *EvaluationComposite) Eval(et *models.Entity) (bool, error) {
