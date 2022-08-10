@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -207,7 +208,7 @@ func (v *Value) GetBoolVal() (bool, error) {
 // If the Value is null, it return nil
 // If the Value not of the requested type, it return ErrAskingForWrongType
 // If the Value.Attribut == nil, it panic
-func (v *Value) GetRelationVal(db *gorm.DB) (*Entity, error) {
+func (v *Value) GetComputedRelationVal(db *gorm.DB) (*Entity, error) {
 	err := v.CheckWhole()
 	if err != nil {
 		panic(err)
@@ -227,6 +228,25 @@ func (v *Value) GetRelationVal(db *gorm.DB) (*Entity, error) {
 	return &et, nil
 }
 
+// Return the Relation value as an uint (returns the ID)
+// If the Value is null, it return nil
+// If the Value not of the requested type, it return ErrAskingForWrongType
+// If the Value.Attribut == nil, it panic
+func (v *Value) GetRelationVal() (uint, error) {
+	err := v.CheckWhole()
+	if err != nil {
+		panic(err)
+	}
+	if v.Attribut.ValueType != RelationValueType {
+		return 0, ErrAskingForWrongType
+	}
+
+	if v.IsNull {
+		return 0, fmt.Errorf("the relation is null")
+	}
+	return v.RelationVal, nil
+}
+
 // Return the underlying value as an interface
 func (v *Value) Value() interface{} {
 	err := v.CheckWhole()
@@ -235,45 +255,37 @@ func (v *Value) Value() interface{} {
 	}
 	switch v.Attribut.ValueType {
 	case StringValueType:
-		s, err := v.GetStringVal()
-		if err != nil {
-			if errors.Is(err, ErrValueIsNull) {
-				return nil
+		if v.IsNull {
+			if v.Attribut.Default {
+				return v.Attribut.DefaultString
 			}
-			//else panic
-			panic(err)
+			return nil
 		}
-		return s
+		return v.StringVal
 	case IntValueType:
-		i, err := v.GetIntVal()
-		if err != nil {
-			if errors.Is(err, ErrValueIsNull) {
-				return nil
+		if v.IsNull {
+			if v.Attribut.Default {
+				return v.Attribut.DefaultInt
 			}
-			//else panic
-			panic(err)
+			return nil
 		}
-		return i
+		return v.IntVal
 	case FloatValueType:
-		f, err := v.GetFloatVal()
-		if err != nil {
-			if errors.Is(err, ErrValueIsNull) {
-				return nil
+		if v.IsNull {
+			if v.Attribut.Default {
+				return v.Attribut.DefaultFloat
 			}
-			//else panic
-			panic(err)
+			return nil
 		}
-		return f
+		return v.FloatVal
 	case BooleanValueType:
-		b, err := v.GetFloatVal()
-		if err != nil {
-			if errors.Is(err, ErrValueIsNull) {
-				return nil
+		if v.IsNull {
+			if v.Attribut.Default {
+				return v.Attribut.DefaultBool
 			}
-			//else panic
-			panic(err)
+			return nil
 		}
-		return b
+		return v.BoolVal
 	case RelationValueType:
 		if v.IsNull {
 			return nil
@@ -281,7 +293,7 @@ func (v *Value) Value() interface{} {
 		return v.RelationVal
 	default:
 		panic(fmt.Errorf(
-			"hmm this Attribut.ValueType does not exists (got=%s)",
+			"this Attribut.ValueType does not exists (got=%s)",
 			v.Attribut.ValueType,
 		))
 	}
@@ -297,51 +309,9 @@ func (v *Value) BuildJsonKVPair() (string, error) {
 	if err != nil {
 		panic(err)
 	}
-	var row string
-	typ := v.Attribut.ValueType
-	switch typ {
-	case StringValueType:
-		stringValue, err := v.GetStringVal()
-		if err != nil {
-			if err == ErrValueIsNull {
-				return "", ErrCantBuildKVPairForNullValue
-			}
-			panic(err)
-		}
-
-		row = fmt.Sprintf("%q: %q", v.Attribut.Name, stringValue)
-	case IntValueType:
-		intValue, err := v.GetIntVal()
-		if err != nil {
-			if err == ErrValueIsNull {
-				return "", ErrCantBuildKVPairForNullValue
-			}
-			panic(err)
-		}
-		row = fmt.Sprintf("%q: %d", v.Attribut.Name, intValue)
-	case FloatValueType:
-		floatValue, err := v.GetFloatVal()
-		if err != nil {
-			if err == ErrValueIsNull {
-				return "", ErrCantBuildKVPairForNullValue
-			}
-			panic(err)
-		}
-		row = fmt.Sprintf("%q: %f", v.Attribut.Name, floatValue)
-	case BooleanValueType:
-		boolValue, err := v.GetBoolVal()
-		if err != nil {
-			if err == ErrValueIsNull {
-				return "", ErrCantBuildKVPairForNullValue
-			}
-			panic(err)
-		}
-		row = fmt.Sprintf("%q: %t", v.Attribut.Name, boolValue)
-	case RelationValueType:
-		row = fmt.Sprintf("%q: %d", v.Attribut.Name, v.RelationVal)
-	default:
-		panic(fmt.Errorf("the type %q is not supported by the EAV (not implemented)", typ))
-
+	bytes, err := json.Marshal(v.Value())
+	if err != nil {
+		return "", fmt.Errorf("an error happened while trying to marshall the %q attr: (%w)", v.Attribut.Name, err)
 	}
-	return row, nil
+	return fmt.Sprintf("%q:%s", v.Attribut.Name, bytes), nil
 }

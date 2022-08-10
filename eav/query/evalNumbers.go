@@ -2,9 +2,14 @@ package query
 
 import "fmt"
 
-func evalNumbers(ref, value float64, operator string) (bool, error) {
-	if !ContainsOperator(operator, getNumericEvaluationOperators()) {
-		return false, fmt.Errorf("operator not allowed for float evaluation")
+// Integer is made up of all the int and float types
+type Number interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64 | ~uint | ~uint8 | ~uint16 | ~uint32
+}
+
+func evalNumbers[T Number](ref, value T, operator string) (bool, error) {
+	if !contains(operator, getNumericEvaluationOperators()) {
+		return false, fmt.Errorf("operator not allowed for number evaluation")
 	}
 	if operator == EO_equals {
 		return ref == value, nil

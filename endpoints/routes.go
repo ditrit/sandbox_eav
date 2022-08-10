@@ -168,11 +168,14 @@ func CreateObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.Header().Add("Location", fmt.Sprintf("/v1/objects/%s/%d", ett.Name, et.ID)) // HACK: we need a more efficient way to get the URL for an entity or an entitytype
+		w.Header().Add("Location", buildLocationString(et))
 		w.WriteHeader(http.StatusCreated)
 		w.Write(et.EncodeToJson())
-
 	}
+}
+
+func buildLocationString(et *models.Entity) string {
+	return fmt.Sprintf("/v1/objects/%s/%d", et.EntityType.Name, et.ID)
 }
 
 type createReq struct {
@@ -224,12 +227,10 @@ func ModifyObject(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println(mr.Attrs)
-
 		operations.UpdateEntity(db, obj, mr.Attrs)
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write(obj.EncodeToJson())
-
 	}
 }
 

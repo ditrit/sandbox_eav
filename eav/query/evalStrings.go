@@ -7,7 +7,7 @@ func allowedOperatorsForStringEvaluations() []string {
 }
 
 func evalStrings(ref, value, operator string) (bool, error) {
-	if !ContainsOperator(operator, allowedOperatorsForStringEvaluations()) {
+	if !contains(operator, allowedOperatorsForStringEvaluations()) {
 		return false, fmt.Errorf("operator not allowed for strings evaluation")
 	}
 	if operator == EO_equals {

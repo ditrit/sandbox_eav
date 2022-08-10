@@ -24,7 +24,7 @@ func main() {
 		panic("failed to connect database")
 	}
 	log.Println("Connected to database")
-	eav.Init(db) // drop and automigrate DB
+	eav.Init(db, true) // drop and automigrate DB
 	log.Println("Automigrate finished")
 
 	// This function create the test schema
@@ -33,7 +33,7 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(endpoints.MiddlewareLogger)
 	// Search for
-	router.HandleFunc("/v1/query", endpoints.Query(db)).Methods("GET")
+	router.HandleFunc("/v1/query", endpoints.Query(db)).Methods("POST")
 	// 405 method not allowed
 	router.HandleFunc("/v1/objects/{type}/", MethodNotAllowed).Methods("PUT", "DELETE")
 

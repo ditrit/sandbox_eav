@@ -7,11 +7,11 @@
 @birdid = 2
 
 
-GET {{URI}}/query HTTP/1.1
+POST {{URI}}/query HTTP/1.1
 content-type: application/json
 
 {
-  "attrs": ["bird.specie", "human.name"],
+  "attrs": ["bird.specie", "human.name", "bird.color"],
   "tables": ["bird", "human"],
   "condition": {
     "operator": "&&",
@@ -33,7 +33,7 @@ content-type: application/json
       {
         "operator": "",
         "comparaison": {
-          "operator": ">",
+          "operator": "==",
           "expre1": {
               "type": "ref",
               "value": "bird.owner"
@@ -45,7 +45,7 @@ content-type: application/json
         }
       }
     ]
-    }
+  }
 }
 
 
@@ -53,33 +53,33 @@ content-type: application/json
 
 
 # SELECT specie FROM bird WHERE bird.color == blue && bird.weight == null
-GET {{URI}}/query HTTP/1.1
+POST {{URI}}/query HTTP/1.1
 content-type: application/json
 
 {
   "attrs": ["bird.specie", "human.name"],
-  "table": ["bird", "human"],
+  "tables": ["bird", "human"],
   "condition": {
     "operator": "&&",
     "conditions": [
       {   
         "operator": "",
         "comparaison": {
-          "operator": "==",
+          "operator": "!=",
           "expre1": {
               "type": "ref",
               "value": "bird.color"
           } ,
           "expre2": {
               "type": "value",
-              "value": "blue"
+              "value": "red"
           }
         }
       },
       {
         "operator": "",
         "comparaison": {
-          "operator": "!=",
+          "operator": "==",
           "expre1": {
               "type": "ref",
               "value": "bird.owner"
@@ -93,14 +93,14 @@ content-type: application/json
       {
         "operator": "",
         "comparaison": {
-          "operator": "==",
+          "operator": "!=",
           "expre1": {
               "type": "ref",
               "value": "human.name"
           } ,
           "expre2": {
               "type": "value",
-              "value": "bob"
+              "value": "truc"
           }
         }
       }

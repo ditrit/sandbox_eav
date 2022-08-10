@@ -4,7 +4,7 @@
 
 @URI = http://{{hostname}}:{{port}}/v1
 
-@birdid = 2
+@birdid = 3
 
 
 # GET all birds

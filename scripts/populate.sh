@@ -1,37 +1,19 @@
-curl --request POST \
-  --url http://localhost:9999/v1/objects/bird \
-  --header 'content-type: application/json' \
-  --header 'user-agent: vscode-restclient' \
-  --data '{"attrs": {"color": "red","specie": "aigle","height": 106,"owner": 1}}'
 
-curl --request POST \
-  --url http://localhost:9999/v1/objects/bird \
-  --header 'content-type: application/json' \
-  --header 'user-agent: vscode-restclient' \
-  --data '{"attrs": {"color": "orange","specie": "aigle","height": 105,"owner": 1}}'
-
-curl --request POST \
-  --url http://localhost:9999/v1/objects/bird \
-  --header 'content-type: application/json' \
-  --header 'user-agent: vscode-restclient' \
-  --data '{"attrs": {"color": "blue","specie": "mesange","height": 9,"owner": 1}}'
+ENDPOINT="http://localhost:9999/v1/objects/bird"
+CONTENTTYPE="content-type: application/json"
+DATAARRAY=('{"attrs":{"color":"red","specie":"aigle","height":10,"owner":1,"weight":5.2}}'\
+    '{"attrs":{"color":"orange","specie":"mésange","height":6,"owner":1,"weight":10.2}}'\
+    '{"attrs":{"color":"red","specie":"rouge_gorge","height":60,"owner":1,"weight":20.55}}'\
+    '{"attrs":{"color":"orange","specie":"pinson","height":5,"owner":1,"weight":2.5}}'\
+    '{"attrs":{"color":"red","specie":"aigle","height":1,"owner":2,"weight":25.1}}'\
+    '{"attrs":{"color":"yellow","specie":"vautour","height":58,"owner":2,"weight":1.2}}'\
+    '{"attrs":{"color":"blue","specie":"aigle","height":20,"owner":2,"weight":12525.112524211}}'\
+    '{"attrs":{"color":"purple","specie":"mésange","height":21,"owner":2,"weight":12.12}}'\
+'{"attrs":{"color":"blue","specie":"pinson","height":25785,"owner":2,"weight":3.2}}')
 
 
-
-curl --request POST \
-  --url http://localhost:9999/v1/objects/bird \
-  --header 'content-type: application/json' \
-  --header 'user-agent: vscode-restclient' \
-  --data '{"attrs": {"color": "orange","specie": "bird with null field","height": 50,"weight": 5.2}}'
-
-curl --request POST \
-  --url http://localhost:9999/v1/objects/bird \
-  --header 'content-type: application/json' \
-  --header 'user-agent: vscode-restclient' \
-  --data '{"attrs": {"color": "orange","specie": "bird with null field","height": 50,"weight": 10.8}}'
-
-curl --request POST \
-  --url http://localhost:9999/v1/objects/bird \
-  --header 'content-type: application/json' \
-  --header 'user-agent: vscode-restclient' \
-    --data '{"attrs": {"color": "orange","specie": "bird with null field","height": 50,"weight": 100.8}}'
+for data in ${DATAARRAY[@]}; do
+    echo "Sending data: " $(echo $data | jq .)
+    echo "Received: "
+    curl --request POST --url $ENDPOINT --header CONTENTTYPE --data ${data} --silent | jq .
+done

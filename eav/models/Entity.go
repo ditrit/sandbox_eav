@@ -35,13 +35,10 @@ func (e *Entity) EncodeToJson() []byte {
 func (e *Entity) encodeAttributes() string {
 	var pairs []string
 	for _, f := range e.Fields {
-		pair, err := f.BuildJsonKVPair()
-		if err != nil {
-			if err == ErrCantBuildKVPairForNullValue {
-				continue
-			}
-			panic(err)
+		if f.IsNull {
+			continue
 		}
+		pair, _ := f.BuildJsonKVPair()
 		pairs = append(pairs, pair)
 	}
 	return utils.BuildJsonFromStrings(pairs)

@@ -1,14 +1,20 @@
 package models
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 const (
-	RelationValueType string = "relation"
-	BooleanValueType  string = "bool"
-	StringValueType   string = "string"
-	IntValueType      string = "int"
-	FloatValueType    string = "float"
+	RelationValueType ValueTypeT = "relation"
+	BooleanValueType  ValueTypeT = "bool"
+	StringValueType   ValueTypeT = "string"
+	IntValueType      ValueTypeT = "int"
+	FloatValueType    ValueTypeT = "float"
 )
+
+// Describe the type of an attribut
+type ValueTypeT string
 
 // Describe the attribut of a en EntityType
 type Attribut struct {
@@ -25,14 +31,20 @@ type Attribut struct {
 	DefaultFloat  float64
 
 	// the type the values of this attr are. Can be "int", "float", "string", "bool", "relation"
-	ValueType          string
+	ValueType          ValueTypeT
 	TargetEntityTypeId uint // name of the EntityType
 
 	// GORM relations
 	EntityTypeId uint
 }
 
+var ErrNoDefaultValueSet = errors.New("no default value found")
+
+// Get a new value with de
 func (a *Attribut) GetNewDefaultValue() (*Value, error) {
+	if !a.Default {
+		return nil, ErrNoDefaultValueSet
+	}
 	switch a.ValueType {
 	case StringValueType:
 		v, err := NewStringValue(a, a.DefaultString)

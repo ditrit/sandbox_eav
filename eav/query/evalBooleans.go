@@ -7,7 +7,7 @@ func allowedOperatorsForBooleanEvaluations() []string {
 }
 
 func evalBooleans(ref bool, value bool, operator string) (bool, error) {
-	if !ContainsOperator(operator, allowedOperatorsForBooleanEvaluations()) {
+	if !contains(operator, allowedOperatorsForBooleanEvaluations()) {
 		return false, fmt.Errorf("operator not allowed for boolean evaluation")
 	}
 	if operator == EO_equals {

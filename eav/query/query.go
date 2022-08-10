@@ -1,6 +1,7 @@
 package query
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -75,9 +76,11 @@ func (q *Query) Run(db *gorm.DB) ([]byte, error) {
 		}
 		data[i] = entities
 	}
-
+	var b strings.Builder
+	b.WriteString("[")
 	// Make an IterManager holding the entities
 	entityManager := NewIterManager(data)
+	var selectedResults []string
 	for {
 		// Get selected entities
 		selectedEntities := entityManager.GetSelectedElems()
@@ -90,24 +93,58 @@ func (q *Query) Run(db *gorm.DB) ([]byte, error) {
 		if err != nil {
 			return emptyResponse, err
 		}
-
 		// if the condition tree is validated, then add to the returnResultSet
+		if r {
+			resultFields, err := getResultFields(rcs, q.Attrs)
+			if err != nil {
+				return emptyResponse, err
+			}
+			byt, err := json.Marshal(resultFields)
+			if err != nil {
+				return emptyResponse, fmt.Errorf("error while marshalling the response data")
+			}
+
+			selectedResults = append(selectedResults, string(byt))
+		}
+
 		if entityManager.Next() {
-			debugLogger.Println("entityManager exited it's main loop")
 			break
 		}
 	}
-	return emptyResponse, nil
+	b.WriteString(strings.Join(selectedResults, ","))
+	b.WriteString("]")
+	return []byte(b.String()), nil
 }
 
-type Records map[string]any
+func getResultFields(rcs RecordMap, attrs []string) (map[string]any, error) {
+	resurnSet := make(map[string]any, len(attrs))
+	for _, att := range attrs {
+		val, ok := rcs[att]
+		if !ok {
+			return resurnSet, fmt.Errorf("the attr %q does not exist", att)
+		}
+		resurnSet[att] = val.Value()
+	}
+	return resurnSet, nil
+}
 
-func buildRecordSliceFromEntities(ets []*models.Entity) Records {
-	var rcs Records = Records{}
+type RecordMap map[string]*models.Value
+
+func buildRecordSliceFromEntities(ets []*models.Entity) RecordMap {
+	var rcs RecordMap = RecordMap{}
 	for _, et := range ets {
+		rcs[et.EntityType.Name+".id"] = &models.Value{
+			IntVal:   int(et.ID),
+			IsNull:   false,
+			EntityId: et.ID,
+			Attribut: &models.Attribut{
+				Name:      "id",
+				ValueType: models.IntValueType,
+			},
+		}
 		for _, f := range et.Fields {
 			key := fmt.Sprintf("%s.%s", et.EntityType.Name, f.Attribut.Name)
-			rcs[key] = f.Value()
+			rcs[key] = f
 		}
 	}
 	return rcs
@@ -126,37 +163,49 @@ func getEntityTypes(db *gorm.DB, names ...string) ([]*models.EntityType, error) 
 	return etts, nil
 }
 
-func (ec *EvaluationComposite) Eval(et *models.Entity) (bool, error) {
+func (ec *EvaluationComposite) Eval(rcs RecordMap) (bool, error) {
 	ec.Operator = strings.TrimSpace(ec.Operator)
 	if ec.Operator == "" {
-		if ec.Composites == nil {
-			// we are suposedly on a terminal EvaluationComposite
-			// ec.Composites is suposedly nulll
-			fmt.Println("We now will evaluate the following", ec.Evaluation)
-			return ec.Evaluation.Eval(et)
+		if ec.Composites != nil {
+			return false, ErrOperatorEmptyWithNoConditions
 		}
-		return false, ErrOperatorEmptyWithNoConditions
-
+		// we are suposedly on a terminal EvaluationComposite
+		// ec.Composites is suposedly null
+		fmt.Println("We now will evaluate the following", ec.Evaluation)
+		r, err := ec.Evaluation.Eval(rcs)
+		fmt.Println("RESULT: ", r)
+		return r, err
 	}
-	if !ContainsOperator(ec.Operator, getBooleanOperators()) {
+	if !contains(ec.Operator, getBooleanOperators()) {
 		return false, ErrBooleanOperatorNotImplemented
 	}
 
 	// EVALUATION for AND OPERATOR
 	if ec.Operator == BO_and {
-		var results []bool
-		for _, ev := range ec.Composites {
-			res, err := ev.Eval(et)
-			if err != nil {
-				return false, err
-			}
-			results = append(results, res)
-		}
-		return allTrue(results), nil
+		return andEval(ec.Composites, rcs)
 	}
 	// EVALUATION for OR OPERATOR
-	for _, ev := range ec.Composites {
-		res, err := ev.Eval(et)
+	return orEval(ec.Composites, rcs)
+}
+
+// Evaluate the Conditions and apply an AND operator on the result
+func andEval(evcs []EvaluationComposite, rcs RecordMap) (bool, error) {
+	for _, ev := range evcs {
+		res, err := ev.Eval(rcs)
+		if err != nil {
+			return false, err
+		}
+		if !res {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// Evaluate the Conditions and apply an OR operator on the result
+func orEval(evcs []EvaluationComposite, rcs RecordMap) (bool, error) {
+	for _, ev := range evcs {
+		res, err := ev.Eval(rcs)
 		if err != nil {
 			return false, err
 		}
@@ -167,214 +216,177 @@ func (ec *EvaluationComposite) Eval(et *models.Entity) (bool, error) {
 	return false, nil
 }
 
-func (ev *Evaluation) Eval(et *models.Entity) (bool, error) {
+func (ev *Evaluation) Eval(rcs RecordMap) (result bool, err error) {
 	ev.Operator = strings.TrimSpace(ev.Operator)
 	if ev.Operator == "" {
 		return false, ErrOperatorEmpty
 	}
-	if !ContainsOperator(ev.Operator, getEvaluationOperators()) {
+	if !contains(ev.Operator, getEvaluationOperators()) {
 		return false, ErrEvalutationOperatorNotImplemented
 	}
-	var result bool
+
 	if ev.Expre1.Type == "ref" && ev.Expre2.Type == "value" {
-		value, err := getValue(et, ev.Expre1.Value.(string))
+		tableDotAttr, ok := ev.Expre1.Value.(string)
+		if !ok {
+			return false, fmt.Errorf("can't cast comparation.expre1.value to a string. (got=%v)", ev.Expre1.Value)
+		}
+		val, ok := rcs[tableDotAttr]
+		if !ok {
+			return false, fmt.Errorf("%q not found", ev.Expre1.Value)
+		}
+		result, err = evalValueVsRef(val, ev.Expre2.Value, ev.Operator)
 		if err != nil {
 			return false, err
 		}
-		result, err = evalValueVsRef(value, ev.Expre2.Value, ev.Operator)
-		if err != nil {
-			return false, err
-		}
+
 	} else if ev.Expre1.Type == "value" && ev.Expre2.Type == "ref" {
-		value, err := getValue(et, ev.Expre2.Value.(string))
+		tableDotAttr, ok := ev.Expre2.Value.(string)
+		if !ok {
+			return false, fmt.Errorf("can't cast comparation.expre2.value to a string. (got=%v)", ev.Expre2.Type)
+		}
+		val, ok := rcs[tableDotAttr]
+		if !ok {
+			return false, fmt.Errorf("%q not found", ev.Expre2.Value)
+		}
+		result, err = evalValueVsRef(val, ev.Expre1.Value, ev.Operator)
 		if err != nil {
 			return false, err
 		}
-		result, err = evalValueVsRef(value, ev.Expre1.Value, ev.Operator)
-		if err != nil {
-			return false, err
-		}
+
 	} else if ev.Expre1.Type == "ref" && ev.Expre2.Type == "ref" {
-		value1, err := getValue(et, ev.Expre1.Value.(string))
+		expre1ValueString, ok := ev.Expre1.Value.(string)
+		if !ok {
+			return false, fmt.Errorf("can't cast comparation.expre1.value to a string. (got=%v)", ev.Expre1.Value)
+		}
+		expre2ValueString, ok := ev.Expre2.Value.(string)
+		if !ok {
+			return false, fmt.Errorf("can't cast comparation.expre2.value to a string. (got=%v)", ev.Expre1.Value)
+		}
+		val1, ok := rcs[expre1ValueString]
+		if !ok {
+			return false, fmt.Errorf("%q not found", ev.Expre2.Value)
+		}
+		val2, ok := rcs[expre2ValueString]
+		if !ok {
+			return false, fmt.Errorf("%q not found", ev.Expre2.Value)
+		}
+
+		result, err = evalRefVsRef(val1, val2, ev.Operator)
 		if err != nil {
 			return false, err
 		}
-		value2, err := getValue(et, ev.Expre2.Value.(string))
-		if err != nil {
-			return false, err
-		}
-		result, err = evalRefVsRef(value1, value2, ev.Operator)
-		if err != nil {
-			return false, err
-		}
+
 	} else if ev.Expre1.Type == "value" || ev.Expre2.Type == "value" {
 		return false, ErrCantEvaluateValueVsValue
 	} else {
-		panic(
-			fmt.Errorf("expression type does not exist. got %q and %q", ev.Expre1.Type, ev.Expre2.Type),
-		)
+		return false, fmt.Errorf("expression type does not exist. got %q and %q", ev.Expre1.Type, ev.Expre2.Type)
 	}
 
 	return result, nil
 }
 
+func jsontruc(v any) string {
+	r, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(r)
+}
+
 func evalRefVsRef(refV1 *models.Value, refV2 *models.Value, operator string) (bool, error) {
+	debugLogger.Printf("evalRefVsRef: ref %v and ref %v", jsontruc(refV1), jsontruc(refV2))
+
+	val1 := refV1.Value()
+	val2 := refV1.Value()
+	if val1 == nil || val2 == nil {
+		return false, nil
+	}
 	if refV1.Attribut.ValueType == refV2.Attribut.ValueType {
 		// Same type
 		switch refV1.Attribut.ValueType {
 		case models.StringValueType:
-			strVal1, err := refV1.GetStringVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			strVal2, err := refV2.GetStringVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			return evalStrings(strVal1, strVal2, operator)
-
+			return evalStrings(val1.(string), val2.(string), operator)
 		case models.BooleanValueType:
-			boolVal1, err := refV1.GetBoolVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			boolVal2, err := refV2.GetBoolVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			return evalBooleans(boolVal1, boolVal2, operator)
+			return evalBooleans(val1.(bool), val2.(bool), operator)
 		case models.IntValueType:
-			intVal1, err := refV1.GetIntVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			intVal2, err := refV2.GetIntVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			return evalNumbers(float64(intVal1), float64(intVal2), operator)
+			return evalNumbers(val1.(int), val2.(int), operator)
 		case models.FloatValueType:
-			floatVal1, err := refV1.GetFloatVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			floatVal2, err := refV2.GetFloatVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-			return evalNumbers(floatVal1, floatVal2, operator)
-
+			return evalNumbers(val1.(float64), val2.(float64), operator)
 		case models.RelationValueType:
-			panic("NOT IMPLEMENTED")
-
+			return evalNumbers(val1.(uint), val2.(uint), operator) // FIXME: get only equality OP
 		default:
 			panic("mmh should not be there")
 		}
-	} else if (refV1.Attribut.ValueType == models.FloatValueType && refV2.Attribut.ValueType == models.IntValueType) || (refV1.Attribut.ValueType == models.IntValueType && refV2.Attribut.ValueType == models.FloatValueType) {
-		// number comparaison
-		var float1 float64
-		var float2 float64
-		var err error
-		if refV1.Attribut.ValueType == models.FloatValueType {
-			float1, err = refV1.GetFloatVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-		} else if refV1.Attribut.ValueType == models.IntValueType {
-			int1, err := refV1.GetIntVal()
-			float1 = float64(int1)
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
+	} else if (refV1.Attribut.ValueType == models.FloatValueType || refV1.Attribut.ValueType == models.IntValueType || refV1.Attribut.ValueType == models.RelationValueType) && (refV2.Attribut.ValueType == models.FloatValueType || refV2.Attribut.ValueType == models.IntValueType || refV2.Attribut.ValueType == models.RelationValueType) {
+
+		float1, err := refToNumVal(refV1)
+		if err != nil {
+			return false, err
+		}
+		float2, err := refToNumVal(refV2)
+		if err != nil {
+			return false, err
 		}
 
-		if refV2.Attribut.ValueType == models.FloatValueType {
-			float1, err = refV2.GetFloatVal()
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-		} else if refV2.Attribut.ValueType == models.IntValueType {
-			int2, err := refV2.GetFloatVal()
-			float2 = float64(int2)
-			if err != nil {
-				if errors.Is(err, models.ErrValueIsNull) {
-					return false, ErrCantEvaluateNullRefAgainstAnythingNotNull
-				}
-				panic(err)
-			}
-		}
 		return evalNumbers(float1, float2, operator)
 	}
 
 	return false, nil
 }
 
+func refToNumVal(ref *models.Value) (floatVal float64, err error) {
+	switch ref.Attribut.ValueType {
+	case models.FloatValueType:
+		floatVal, err = ref.GetFloatVal()
+		if err != nil {
+			if errors.Is(err, models.ErrValueIsNull) {
+				return 0.0, ErrCantEvaluateNullRefAgainstAnythingNotNull
+			}
+			panic(err)
+		}
+	case models.IntValueType:
+		int1, err := ref.GetIntVal()
+		floatVal = float64(int1)
+		if err != nil {
+			if errors.Is(err, models.ErrValueIsNull) {
+				return 0.0, ErrCantEvaluateNullRefAgainstAnythingNotNull
+			}
+			panic(err)
+		}
+	case models.RelationValueType:
+		if ref.IsNull {
+			return 0.0, fmt.Errorf("can't evaluate a null reference to anything")
+		}
+		floatVal = float64(ref.RelationVal) // FIXME: bruh this is a terrible implementation be it will do the job for a poc.
+	default:
+		panic("we are not supposed to end up here")
+	}
+	return floatVal, nil
+}
+
 // Evaluate a models.Value against a value.
 func evalValueVsRef(refValue *models.Value, value interface{}, operator string) (bool, error) {
+	debugLogger.Printf("evalValueVsRef: ref %v and value %v", refValue, value)
 	switch value := value.(type) {
 	case string:
-		strVal, err := refValue.GetStringVal()
-		if err != nil {
-			panic(err)
+		val := refValue.Value()
+		if val == nil {
+			return false, nil
 		}
-		return evalStrings(strVal, value, operator)
-
+		return evalStrings(val.(string), value, operator)
 	case float64:
-		var floatVal float64
-		var err error
-		if refValue.Attribut.ValueType == models.IntValueType {
-			intVal, err := refValue.GetIntVal()
-			if err != nil {
-				panic(err)
-			}
-			floatVal = float64(intVal)
-		} else {
-			floatVal, err = refValue.GetFloatVal()
-			if err != nil {
-				panic(err)
-			}
+		val := refValue.Value()
+		if val == nil {
+			return false, nil
 		}
-		return evalNumbers(floatVal, value, operator)
+		return evalNumbers(val.(float64), value, operator)
 
 	case bool:
-		boolVal, err := refValue.GetBoolVal()
-		if err != nil {
-			panic(err)
+		val := refValue.Value()
+		if val == nil {
+			return false, nil
 		}
-		return evalBooleans(boolVal, value, operator)
+		return evalBooleans(val.(bool), value, operator)
 	case nil:
 		return evalNulls(refValue.IsNull, true, operator)
 
@@ -384,44 +396,11 @@ func evalValueVsRef(refValue *models.Value, value interface{}, operator string) 
 	}
 }
 
-func ContainsOperator(op string, ops []string) bool {
+func contains[T comparable](op T, ops []T) bool {
 	for _, v := range ops {
 		if v == op {
 			return true
 		}
 	}
 	return false
-}
-
-func allTrue(lis []bool) bool {
-	for _, b := range lis {
-		if !b {
-			return false
-		}
-	}
-	return true
-}
-
-func getValue(et *models.Entity, ref string) (*models.Value, error) {
-	parts := strings.SplitN(ref, ".", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("ref value is not a valid string: got=%s, wanted something like table.valuename", ref)
-	}
-	var attrId uint = 0
-	for _, a := range et.EntityType.Attributs {
-		if a.Name == parts[1] {
-			attrId = a.ID
-			break
-		}
-	}
-	if attrId == 0 {
-		return nil, fmt.Errorf("attr not found: got=%s", parts[1])
-	}
-	for _, v := range et.Fields {
-		if v.AttributId == attrId {
-			return v, nil
-		}
-	}
-	return nil, fmt.Errorf("value not found: got=%s", parts[1])
-
 }

@@ -7,7 +7,7 @@ func allowedOperatorsForNullsEvaluations() []string {
 }
 
 func evalNulls(isNull1, isNull2 bool, operator string) (bool, error) {
-	if !ContainsOperator(operator, allowedOperatorsForStringEvaluations()) {
+	if !contains(operator, allowedOperatorsForNullsEvaluations()) {
 		return false, fmt.Errorf("operator not allowed for nulls evaluation")
 	}
 	if operator == EO_equals {
